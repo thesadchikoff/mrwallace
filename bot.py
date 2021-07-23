@@ -122,6 +122,7 @@ async def on_ready():
 async def on_message( message ):
     if not message.author.bot:
         author = message.author
+        levs = client.get_emoji(868112129910272060)
         if len(message.content) > 2:
             for row in users1.find( { "id": author.id } ):
 
@@ -136,14 +137,13 @@ async def on_message( message ):
                     avatar = message.author.avatar_url
                     username = message.author.name
                     embed = discord.Embed(
-                        title=f"Вы достигли `{lv} уровня`! Поздравляем\n",
-                        description="**Вы получили `500 💶` за новый уровень!**", color=0xbfff70)
-                    embed.set_author(name=username, url=avatar)
+                        title=f"Новый уровень!",
+                        description=f"{author.mention}, вы достигли __{lv} уровня {levs}! Поздравляем\n**Вы получили `1500 💶` за новый уровень!**", color=0xbfff70)
                     embed.set_thumbnail(url=avatar)
                     print(f"{avatar}")
                     # embed.add_field(name="undefined", value="undefined", inline=False)
                     channel = client.get_channel(735472856527536208)
-                    bal = 500
+                    bal = 1500
                     bal += row["balance"]
                     users1.update_one({"id": author.id}, { "$set": { "balance": bal, "lvl": lv, "lvlch": lvch } })
 
@@ -303,7 +303,7 @@ async def slots( ctx, amount: int = None ):
 						if a == b: return await ctx.send( embed = discord.Embed(description = f"{ author.mention } сыграл в слоты с крупье на { amount } фишек.\nПолучилась ничья!\n**__Счет:__ { a }:{ b }**", color = 0xD93516) )
 						if a > b:
 							balance = users1.find_one( { "id": author.id } )['chips']
-							balance += amount 
+							balance += amount
 							users1.update_one( { "id": author.id }, { "$set": { "chips": balance } } )
 							return await ctx.send( embed = discord.Embed(description = f"{ author.mention } сыграл в слоты с крупье на { amount } фишек.\n\n**__Победитель:__ { author.mention }.**\n**__Счет:__ { a }:{ b }**", color = 0x5CFA34) )
 
@@ -327,41 +327,42 @@ async def slots( ctx, amount: int = None ):
 
 @client.command()
 async def bet( ctx, user: discord.Member = None, amount: int = None ):
-	if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
-		if user and amount:
-			if user.id != 797171215285747772:
-				author = ctx.message.author
-				if author.id != user.id:
-					if( casino1.count_documents( { "author_id": author.id } ) == 0 and casino1.count_documents( { "author_id": user.id } ) == 0 ):
-						if( casino1.count_documents( { "author_id": author.id } ) == 0 and casino1.count_documents( { "author_id": user.id } ) == 0 ):
-							if( 'chips' in users1.find_one( { "id": author.id } ) and 'chips' in users1.find_one( { "id": user.id } ) ):
-								if amount <= 0: return await ctx.send( embed = discord.Embed(description = f"Нельзя кинуть ставку меньше либо равно нулю.", color = 0xF02925) )
-								author_balance = users1.find_one( { "id": author.id } )['chips']
-								member_balance = users1.find_one( { "id": user.id } )['chips']
-								if amount > int( author_balance ): return await ctx.send(embed = discord.Embed(description = f"У вас нету такого кол-ва фишек!", color = 0xF02925))
-								if amount > int( member_balance ): return await ctx.send(embed = discord.Embed(description = f"У участника нету такого кол-ва фишек!", color = 0xF02925))
-								post = {
+    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
+        if user and amount:
+            if user.id != 797171215285747772:
+                author = ctx.message.author
+                emoji = client.get_emoji(867177297659822100)
+                if author.id != user.id:
+                    if( casino1.count_documents( { "author_id": author.id } ) == 0 and casino1.count_documents( { "author_id": user.id } ) == 0 ):
+                        if( casino1.count_documents( { "author_id": author.id } ) == 0 and casino1.count_documents( { "author_id": user.id } ) == 0 ):
+                            if( 'chips' in users1.find_one( { "id": author.id } ) and 'chips' in users1.find_one( { "id": user.id } ) ):
+                                if amount <= 0: return await ctx.send( embed = discord.Embed(description = f"Нельзя кинуть ставку меньше либо равно нулю.", color = 0xF02925) )
+                                author_balance = users1.find_one( { "id": author.id } )['chips']
+                                member_balance = users1.find_one( { "id": user.id } )['chips']
+                                if amount > int( author_balance ): return await ctx.send(embed = discord.Embed(description = f"У вас нету такого кол-ва фишек {emoji}!", color = 0xF02925))
+                                if amount > int( member_balance ): return await ctx.send(embed = discord.Embed(description = f"У участника нету такого кол-ва фишек! {emoji}", color = 0xF02925))
+                                post = {
 									"author_id": author.id,
 									"member_id": user.id,
 									"bet": amount,
 									"type": 0,
 								}
-								casino1.insert_one( post )
-								await ctx.send(embed = discord.Embed(title = "Игра в кости 🎲", description = f"**{ author.mention } кинул { user.mention } ставку в размере { amount } фишек.**\n\n**Примечание:**\nЧтобы принять ставку введите **!yes**\nЧтобы отклонить ставку введите **!no**\nЧтобы отменить ставку введите **!cancel**", color = 0xD9166C))
-							else:
-								await ctx.send(embed = discord.Embed(description = f"У Вас/Участника нету ни одной фишки.", color = 0xD93516))
-						else:
-							await ctx.send(embed = discord.Embed(description = f"Вам/Участнику уже предложили ставку.", color = 0xD93516))
-					else:
-						await ctx.send(embed = discord.Embed(description = f"Вы/Участник уже предложил ставку.", color = 0xD93516))
-
-				else:
-					await ctx.send(embed = discord.Embed(description = f"Вы не можете играть сами с собой!", color = 0xD93516))
-			else:
-				await ctx.send(embed = discord.Embed(description = f"Вы не можете кинуть ставку боту!", color = 0xD93516))
-
-		else:
-			await ctx.send(embed = discord.Embed(description = f"**Используйте:**\n!bet <@участник> <количество :euro:>", color = 0xD9166C))
+                                casino1.insert_one( post )
+                                await ctx.send(embed = discord.Embed(title = "Игра в кости 🎲", description = f"**{ author.mention } кинул { user.mention } ставку в размере { amount } фишек. {emoji}**\n\n**Примечание:**\nЧтобы принять ставку введите **!yes**\nЧтобы отклонить ставку введите **!no**\nЧтобы отменить ставку введите **!cancel**", color = 0xD9166C))
+                            else:
+                                await ctx.send(embed = discord.Embed(description = f"У Вас/Участника нету ни одной фишки. {emoji}", color = 0xD93516))
+                        else:
+                            await ctx.send(embed = discord.Embed(description = f"Вам/Участнику уже предложили ставку. {emoji}", color = 0xD93516))
+                    else:
+                        await ctx.send(embed = discord.Embed(description = f"Вы/Участник уже предложил ставку. {emoji}", color = 0xD93516))
+                        
+                else:
+                    await ctx.send(embed = discord.Embed(description = f"Вы не можете играть сами с собой!", color = 0xD93516))
+            else:
+                await ctx.send(embed = discord.Embed(description = f"Вы не можете кинуть ставку боту!", color = 0xD93516))
+                
+        else:
+            await ctx.send(embed = discord.Embed(description = f"**Используйте:**\n!bet <@участник> <количество {emoji}>", color = 0xD9166C))
 
 
 @client.command()
@@ -656,13 +657,14 @@ async def dell_product( ctx, role_id ):
 		await ctx.send( embed = discord.Embed(description = f"{ author.mention }, Ошибка, введите команду по форме: /dell_product <id роли>", color = 0xF02F24), delete_after = 5 )
 
 
-#edit event
-@client.event
-async def on_message_edit(before, after):
-    channel = client.get_channel( 725338050946924564 )
-    if before.content == after.content:
-        return
-    await channel.send(f"**Сообщение было изменено с** `{before.content}` **на** `{after.content}`")
+# #edit event
+# @client.event
+# async def on_message_edit(ctx, before, after):
+#     channel = client.get_channel( 725338050946924564 )
+#     author = ctx.message.author
+#     if before.content == after.content:
+#         return
+#     await channel.send(embed = discord.Embed(description = f'Сообщение было изменено пользователем - { author.mention }'))
 
 #user
 @client.command()
@@ -670,6 +672,11 @@ async def on_message_edit(before, after):
 async def user( ctx, user: discord.Member = None ):
     guild = client.get_guild( 709133637020831774 )
     author = ctx.message.author
+    emoji = client.get_emoji(867177297659822100)
+    erep = client.get_emoji(868109639676489768)
+    wark = client.get_emoji(868111109712932926)
+    levs = client.get_emoji(868112129910272060)
+    ops = client.get_emoji(868112072905461760)
     i = 0
     if user:
         rep = users1.find_one( { 'id': user.id } )[ "rep" ]
@@ -680,7 +687,7 @@ async def user( ctx, user: discord.Member = None ):
         war = users1.find_one( { 'id': user.id } )[ "warns" ]
         lvlch = users1.find_one({'id': user.id})["lvlch"]
         chips = users1.find_one({'id': user.id})["chips"]
-        emb = discord.Embed(description = f"**Профиль участника { user.mention }**\n\n\n**__Личная информация:__**\n**⭐ Уровень: { lvl }**\n**🔥 Репутация: { rep }**\n**⚡ Опыт: { exp } из { lvlch }**\n**⚠️ Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n:coin: Фишки: __{ chips }__**", color=0x9A3FD5)
+        emb = discord.Embed(description = f"**Профиль участника { user.mention }**\n\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**", color=0x9A3FD5)
         emb.set_thumbnail( url = user.avatar_url )
         emb.set_footer(text= f'ID участника { author.name } - { idi }')
         await ctx.send(embed=emb)
@@ -693,7 +700,7 @@ async def user( ctx, user: discord.Member = None ):
         war = users1.find_one( { 'id': author.id } )[ "warns" ]
         lvlch = users1.find_one({'id': author.id})["lvlch"]
         chips = users1.find_one({'id': author.id})["chips"]
-        emb = discord.Embed(description = f"**Профиль участника { author.mention }**\n\n\n**__Личная информация:__**\n**⭐ Уровень: { lvl }**\n**🔥 Репутация: { rep }**\n**⚡ Опыт: { exp } из { lvlch }**\n**⚠️ Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n:coin: Фишки: __{ chips }__**", color=0x9A3FD5)
+        emb = discord.Embed(description = f"**Профиль участника { author.mention }**\n\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**", color=0x9A3FD5)
         emb.set_thumbnail( url = author.avatar_url )
         emb.set_footer(text= f'ID участника { author.name } - { idi }')
         await ctx.send(embed=emb)
@@ -763,36 +770,41 @@ async def piss( ctx, member: discord.Member ):
 #give_money
 @client.command()
 async def give( ctx, user: discord.Member = None, amount: int = None ):
-	author = ctx.message.author
-	if user and amount:
-		if author == user:
-			return await ctx.send( f'Ошибка!' )
-		balance = users1.find_one( { 'id': author.id } )[ "balance" ]
-		if balance < amount:
-			return await ctx.send(f'{ author.mention }, вы ввели неверное значение.')
-		balance_user = users1.find_one( { 'id': user.id } )[ "balance" ]
-		balance -= amount
-		balance_user += amount
-		users1.update_one( { "id": author.id }, { "$set": { "balance": balance } } )
-		users1.update_one( { "id": user.id }, { "$set": { "balance": balance_user } } )
-		await ctx.send(embed = discord.Embed(description = f'**{ author.mention } успешно перевел пользователю { user.mention } - { amount } 💶.\n\n**__Баланс пользователя { user.name } составляет - { balance_user } 💶__**'))
+    author = ctx.message.author
+    channel = client.get_channel(868125861356908594)
+    if user and amount:
+        if author == user:
+            return await ctx.send( f'Ошибка!' )
+        balance = users1.find_one( { 'id': author.id } )[ "balance" ]
+        if balance < amount:
+            return await ctx.send(f'{ author.mention }, вы ввели неверное значение.')
+        balance_user = users1.find_one( { 'id': user.id } )[ "balance" ]
+        balance -= amount
+        balance_user += amount
+        users1.update_one( { "id": author.id }, { "$set": { "balance": balance } } )
+        users1.update_one( { "id": user.id }, { "$set": { "balance": balance_user } } )
+        await channel.send( embed = discord.Embed(description = f'{author.mention} передал {user.mention} {amount} :euro:'))
+        await ctx.send(embed = discord.Embed(description = f'**{ author.mention } успешно перевел пользователю { user.mention } - { amount } 💶.**\n\n**__Баланс пользователя { user.name } составляет - { balance_user } 💶__**'))
         
 #give_chips
 @client.command()
 async def givechips( ctx, user: discord.Member = None, amount: int = None ):
-	author = ctx.message.author
-	if user and amount:
-		if author == user:
-			return await ctx.send( embed = discord.Embed(description = f'Вы не можете передать фишки сами себе!', color = 0x70D934) )
-		balance = users1.find_one( { 'id': author.id } )[ "chips" ]
-		if balance < amount:
-			return await ctx.send(f'{ author.mention }, вы ввели неверное значение.')
-		balance_user = users1.find_one( { 'id': user.id } )[ "chips" ]
-		balance -= amount
-		balance_user += amount
-		users1.update_one( { "id": author.id }, { "$set": { "chips": balance } } )
-		users1.update_one( { "id": user.id }, { "$set": { "chips": balance_user } } )
-		await ctx.send(embed = discord.Embed(description = f'**{ author.mention } успешно передал пользователю { user.mention } - { amount } фишек :coin:.\n\n**__У { user.name } на данный момент - { balance_user } фишек :coin:__**', color = 0x70D934))
+    author = ctx.message.author
+    channel = client.get_channel(868125861356908594)
+    if user and amount:
+        if author == user:
+            return await ctx.send( embed = discord.Embed(description = f'Вы не можете передать фишки сами себе!', color = 0x70D934) )
+        balance = users1.find_one( { 'id': author.id } )[ "chips" ]
+        if balance < amount:
+            return await ctx.send(f'{ author.mention }, вы ввели неверное значение.')
+        balance_user = users1.find_one( { 'id': user.id } )[ "chips" ]
+        balance -= amount
+        balance_user += amount
+        emoji = client.get_emoji(867177297659822100)
+        users1.update_one( { "id": author.id }, { "$set": { "chips": balance } } )
+        users1.update_one( { "id": user.id }, { "$set": { "chips": balance_user } } )
+        await channel.send( embed = discord.Embed(description = f'{author.mention} передал {user.mention} {amount} {emoji}'))
+        await ctx.send(embed = discord.Embed(description = f'**{ author.mention } успешно передал пользователю { user.mention } - { amount } фишек {emoji}.**\n\n**__У { user.name } на данный момент - { balance_user } фишек :coin:__**', color = 0x70D934))
 
 @client.command()
 @commands.has_permissions(administrator = True)
@@ -1438,7 +1450,7 @@ async def unmute (ctx, member: discord.Member):
 
 
 
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=60.0)
 async def checker():
     for guild in client.guilds:
         for row in capture.find():
