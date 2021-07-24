@@ -82,6 +82,8 @@ casino1 = cluster.Economy.casino
 timely1 = cluster.Economy.timely
 roles = cluster.Economy.roles
 bio = cluster.Economy.bio
+moderation = cluster.Economy.moderation
+unic = cluster.Economy.unic
 
 
 
@@ -138,7 +140,7 @@ async def on_message( message ):
                     username = message.author.name
                     embed = discord.Embed(
                         title=f"Новый уровень!",
-                        description=f"{author.mention}, вы достигли __{lv} уровня {levs}! Поздравляем\n**Вы получили `1500 💶` за новый уровень!**", color=0xbfff70)
+                        description=f"**{author.mention}, вы достигли __{lv}__ уровня {levs}!**\n**__Вы получили `1500 💶` за новый уровень!__**", color=0xbfff70)
                     embed.set_thumbnail(url=avatar)
                     print(f"{avatar}")
                     # embed.add_field(name="undefined", value="undefined", inline=False)
@@ -422,14 +424,13 @@ async def no( ctx ):
 
 @client.command()
 async def cancel( ctx ):
-	author = ctx.message.author
-	if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
-		if casino1.count_documents( { "author_id": author.id } ) != 0:
-			casino1.delete_one( { "author_id": author.id } )
-			await ctx.send(embed = discord.Embed(description = "Вы успешно отменили ставку!", color = 0x5CFA34))
-
-		else:
-			await ctx.send(embed = discord.Embed(description = "Вы никому не предлагали ставку!", color = 0xF02925))
+    author = ctx.message.author
+    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
+        if casino1.count_documents( { "author_id": author.id } ) != 0:
+            casino1.delete_one( { "author_id": author.id } )
+            await ctx.send(embed = discord.Embed(description = "Вы успешно отменили ставку!", color = 0x5CFA34))
+        else:
+            await ctx.send(embed = discord.Embed(description = "Вы никому не предлагали ставку!", color = 0xF02925))
 
 
 
@@ -666,44 +667,59 @@ async def dell_product( ctx, role_id ):
 #         return
 #     await channel.send(embed = discord.Embed(description = f'Сообщение было изменено пользователем - { author.mention }'))
 
+
+@client.command()
+async def mpanel(ctx, user: discord.Member = None):
+    author = ctx.message.author
+    if moderation.count_documents({ "id": user.id }) != 0:
+        rep = moderation.find_one( { 'id': user.id } )[ "rep" ]
+        kick = moderation.find_one( { 'id': user.id } )[ "kicks" ]
+        warn = moderation.find_one( { 'id': user.id } )[ "warns" ]
+        ban = moderation.find_one( { 'id': user.id } )[ "bans" ]
+        ids = moderation.find_one({'id': user.id})["id"]
+        mute = moderation.find_one( { 'id': user.id } )[ "muted" ]
+        modwarn = moderation.find_one( { 'id': user.id } )[ "mwarns" ]
+        data = moderation.find_one({'id': user.id})["date"]
+        emb = discord.Embed(description = f"**Панель модератора: { user.mention }**\n\n\n**__Статистика:__**\n**Репутация модератора:** __{ rep }__\n**Всего кикнуто:** __{ kick } пользователей__\n**Всего забанено:** __{ ban } пользователей__\n**Всего заварнено:** __{warn} пользователей__\n**Всего замьючено:** __{ mute } пользователей__\n**Выговоры:** __{ modwarn }__\n**Дата назначения:** __{data}__", color=0x9A3FD5)
+        emb.set_thumbnail( url = user.avatar_url )
+        emb.set_footer(text= f'ID модератора { user.name } - { ids }')
+        await ctx.send(embed=emb)
+    else:
+        await ctx.send(embed = discord.Embed(description = f"Участник не является Модератором"))
+
 #user
 @client.command()
 
 async def user( ctx, user: discord.Member = None ):
     guild = client.get_guild( 709133637020831774 )
     author = ctx.message.author
+    if user: author = user
     emoji = client.get_emoji(867177297659822100)
     erep = client.get_emoji(868109639676489768)
     wark = client.get_emoji(868111109712932926)
     levs = client.get_emoji(868112129910272060)
     ops = client.get_emoji(868112072905461760)
     i = 0
-    if user:
-        rep = users1.find_one( { 'id': user.id } )[ "rep" ]
-        balance = users1.find_one( { 'id': user.id } )[ "balance" ]
-        lvl = users1.find_one( { 'id': user.id } )[ "lvl" ]
-        exp = users1.find_one( { 'id': user.id } )[ "exp" ]
-        idi = users1.find_one( { 'id': user.id } )[ "id" ]
-        war = users1.find_one( { 'id': user.id } )[ "warns" ]
-        lvlch = users1.find_one({'id': user.id})["lvlch"]
-        chips = users1.find_one({'id': user.id})["chips"]
-        emb = discord.Embed(description = f"**Профиль участника { user.mention }**\n\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**", color=0x9A3FD5)
-        emb.set_thumbnail( url = user.avatar_url )
-        emb.set_footer(text= f'ID участника { author.name } - { idi }')
-        await ctx.send(embed=emb)
-    else:
-        rep = users1.find_one( { 'id': author.id } )[ "rep" ]
-        balance = users1.find_one( { 'id': author.id } )[ "balance" ]
-        lvl = users1.find_one( { 'id': author.id } )[ "lvl" ]
-        exp = users1.find_one( { 'id': author.id } )[ "exp" ]
-        idi = users1.find_one( { 'id': author.id } )[ "id" ]
-        war = users1.find_one( { 'id': author.id } )[ "warns" ]
-        lvlch = users1.find_one({'id': author.id})["lvlch"]
-        chips = users1.find_one({'id': author.id})["chips"]
-        emb = discord.Embed(description = f"**Профиль участника { author.mention }**\n\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**", color=0x9A3FD5)
-        emb.set_thumbnail( url = author.avatar_url )
-        emb.set_footer(text= f'ID участника { author.name } - { idi }')
-        await ctx.send(embed=emb)
+    
+    rep = users1.find_one( { 'id': author.id } )[ "rep" ]
+    balance = users1.find_one( { 'id': author.id } )[ "balance" ]
+    lvl = users1.find_one( { 'id': author.id } )[ "lvl" ]
+    exp = users1.find_one( { 'id': author.id } )[ "exp" ]
+    idi = users1.find_one( { 'id': author.id } )[ "id" ]
+    war = users1.find_one( { 'id': author.id } )[ "warns" ]
+    lvlch = users1.find_one({'id': author.id})["lvlch"]
+    chips = users1.find_one({'id': author.id})["chips"]
+    emb = discord.Embed(description = f"**Профиль участника { author.mention }**\n\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**", color=0x9A3FD5)
+    # if users1.count_documents({'id': author.id}) !=0:
+    #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(822200492003164181).mention}')
+    #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(798225498366935080).mention}')
+    if moderation.count_documents({'id': author.id}) != 0:
+        emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(725309372162637884).mention}')
+    if unic.count_documents({'id': author.id}) != 0:
+        emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(828470967722442782).mention}')
+    emb.set_thumbnail( url = author.avatar_url )
+    emb.set_footer(text= f'ID участника { author.name } - { idi }')
+    await ctx.send(embed=emb)
         
 @client.command()
 async def leadersmoney( ctx ):
@@ -716,6 +732,27 @@ async def leadersmoney( ctx ):
                 if not usr.bot:
                     counter += 1
                     embed.add_field(name=f'**№ { counter }.** { usr.display_name }', value = f'**Деньги: __{ round( row["balance"], 2 ) }__ :euro:**', inline = False)
+                    embed.set_footer(text = f'Вызвано: {ctx.message.author}', icon_url = ctx.message.author.avatar_url)
+        await ctx.send(embed = embed)
+
+
+
+
+
+
+
+@client.command()
+async def leaderschips( ctx ):
+        counter = 0
+        emoji = client.get_emoji(867177297659822100)
+        embed = discord.Embed(title='**`Топ-10` Участников по фишкам:**', color = 0x9A3FD5)
+        for row in users1.find().sort( 'chips', pymongo.DESCENDING ):
+            if counter == 10: break
+            usr = ctx.guild.get_member( row['id'] )
+            if usr is not None:
+                if not usr.bot:
+                    counter += 1
+                    embed.add_field(name=f'**№ { counter }.** { usr.display_name }', value = f'**Фишки: __{ round( row["chips"], 2 ) }__ {emoji}**', inline = False)
                     embed.set_footer(text = f'Вызвано: {ctx.message.author}', icon_url = ctx.message.author.avatar_url)
         await ctx.send(embed = embed)
 
@@ -733,6 +770,10 @@ async def leaderboard( ctx ):
                     embed.set_footer(text = f'Вызвано: {ctx.message.author}', icon_url = ctx.message.author.avatar_url)
 
         await ctx.send(embed = embed)
+
+
+
+
 
 
 
@@ -783,7 +824,7 @@ async def give( ctx, user: discord.Member = None, amount: int = None ):
         balance_user += amount
         users1.update_one( { "id": author.id }, { "$set": { "balance": balance } } )
         users1.update_one( { "id": user.id }, { "$set": { "balance": balance_user } } )
-        await channel.send( embed = discord.Embed(description = f'{author.mention} передал {user.mention} {amount} :euro:'))
+        await channel.send( embed = discord.Embed(description = f'{author.mention} передал {user.mention} {amount} :euro:\nВ канале: {ctx.channel.mention}')) #logs
         await ctx.send(embed = discord.Embed(description = f'**{ author.mention } успешно перевел пользователю { user.mention } - { amount } 💶.**\n\n**__Баланс пользователя { user.name } составляет - { balance_user } 💶__**'))
         
 #give_chips
@@ -791,6 +832,7 @@ async def give( ctx, user: discord.Member = None, amount: int = None ):
 async def givechips( ctx, user: discord.Member = None, amount: int = None ):
     author = ctx.message.author
     channel = client.get_channel(868125861356908594)
+    emoji = client.get_emoji(867177297659822100)
     if user and amount:
         if author == user:
             return await ctx.send( embed = discord.Embed(description = f'Вы не можете передать фишки сами себе!', color = 0x70D934) )
@@ -800,24 +842,27 @@ async def givechips( ctx, user: discord.Member = None, amount: int = None ):
         balance_user = users1.find_one( { 'id': user.id } )[ "chips" ]
         balance -= amount
         balance_user += amount
-        emoji = client.get_emoji(867177297659822100)
         users1.update_one( { "id": author.id }, { "$set": { "chips": balance } } )
         users1.update_one( { "id": user.id }, { "$set": { "chips": balance_user } } )
-        await channel.send( embed = discord.Embed(description = f'{author.mention} передал {user.mention} {amount} {emoji}'))
+        await channel.send( embed = discord.Embed(description = f'{author.mention} передал {user.mention} {amount} {emoji}\nВ канале: {ctx.channel.mention}')) #logs
         await ctx.send(embed = discord.Embed(description = f'**{ author.mention } успешно передал пользователю { user.mention } - { amount } фишек {emoji}.**\n\n**__У { user.name } на данный момент - { balance_user } фишек :coin:__**', color = 0x70D934))
 
 @client.command()
 @commands.has_permissions(administrator = True)
 async def givemoney(ctx, user: discord.Member = None, amount: int = None):
     author = ctx.message.author
+    channel = client.get_channel(868125861356908594)
+    emoji = client.get_emoji(867177297659822100)
     balance = users1.find_one( { 'id': author.id } )["balance"]
     balance += amount
     users1.update_one( { "id": author.id }, { "$set": { "balance": balance } } )
     users1.update_one( { "id": user.id }, { "$set": { "balance": balance } } )
     if author == user:
         await ctx.send( embed = discord.Embed(description = f'{author.mention} выдал себе - { amount } 💶', color = 0x70D934) )
+        await channel.send( embed = discord.Embed(description = f'{author.mention} выдал себе {amount} :euro:\nВ канале: {ctx.channel.mention}')) #logs
     else:
         await ctx.send(embed = discord.Embed(description = f'{author.mention} добавил к балансу пользователя { user.mention } - { amount } 💶', color = 0x70D934))
+        await channel.send( embed = discord.Embed(description = f'{author.mention} выдал валюту пользователю {user.mention} {amount} :euro:\nВ канале: {ctx.channel.mention}'))
     
 @givemoney.error
 async def givemoney_error(ctx,error):
@@ -836,14 +881,18 @@ async def givemoney_error(ctx,error):
 @commands.has_permissions(administrator = True)
 async def givechip(ctx, user: discord.Member = None, amount: int = None):
     author = ctx.message.author
+    channel = client.get_channel(868125861356908594)
+    emoji = client.get_emoji(867177297659822100)
     balance = users1.find_one( { 'id': author.id } )["chips"]
     balance += amount
     users1.update_one( { "id": author.id }, { "$set": { "chips": balance } } )
     users1.update_one( { "id": user.id }, { "$set": { "chips": balance } } )
     if author == user:
-        await ctx.send( embed = discord.Embed(description = f'**{author.mention} выдал себе - __{ amount } фишек :coin:__**', color = 0x70D934) )
+        await channel.send( embed = discord.Embed(description = f'{author.mention} выдал себе {amount} {emoji}\nВ канале: {ctx.channel.mention}'))
+        await ctx.send( embed = discord.Embed(description = f'**{author.mention} выдал себе - __{ amount } фишек {emoji}__**', color = 0x70D934) )
     else:
-        await ctx.send(embed = discord.Embed(description = f'**{author.mention} добавил к балансу пользователя { user.mention } - __{ amount } фишек :coin:__**', color = 0x70D934))
+        await ctx.send(embed = discord.Embed(description = f'{author.mention} добавил к балансу пользователя { user.mention } - { amount } {emoji}', color = 0x70D934))
+        await channel.send( embed = discord.Embed(description = f'{author.mention} выдал пользователю {user.mention} {amount} фишек {emoji}\nВ канале: {ctx.channel.mention}'))
     
 @givechip.error
 async def givechip_error(ctx,error):
@@ -862,15 +911,19 @@ async def givechip_error(ctx,error):
 @commands.has_permissions(administrator = True)
 async def setmoney(ctx, user: discord.Member = None, amount: int = None):
     author = ctx.message.author
+    channel = client.get_channel(868125861356908594)
     balance = users1.find_one( { 'id': author.id } )["balance"]
     balance = amount
     users1.update_one( { "id": author.id }, { "$set": { "balance": balance } } )
     users1.update_one( { "id": user.id }, { "$set": { "balance": balance } } )
     if author == user:
         await ctx.send( embed = discord.Embed(description = f'{author.mention} изменил своё значение баланса на - **__{ int(amount) } 💶__**', color = 0x70D934) )
+        await channel.send( embed = discord.Embed(description = f'{author.mention} выдал себе - **__{ int(amount) } 💶__**\n**В каннале { ctx.channel.name }', color = 0x70D934) ) #logs
     elif balance == 0:
+        await channel.send( embed = discord.Embed(description = f'{author.mention} установил количество :euro: пользователю {user.mention} на значение - **__{ int(amount) }__**\n**В каннале { ctx.channel.name }**', color = 0x70D934) ) #logs
         await ctx.send(embed = discord.Embed(description = f'**Баланс пользователя { user.mention } обнулен.**', color = 0x70D934))
     else:
+        await channel.send( embed = discord.Embed(description = f'{author.mention} установил количество :euro: пользователю {user.mention} на значение - **__{ int(amount) }__**\n**В каннале { ctx.channel.name }**', color = 0x70D934) ) #logs
         await ctx.send(embed = discord.Embed(description = f'{author.mention} изменил значение баланса пользователя { user.mention } на - **__{ int(amount) } 💶__**', color = 0x70D934))
 
 @setmoney.error
@@ -889,15 +942,20 @@ async def setmoney_error(ctx,error):
 @commands.has_permissions(administrator = True)
 async def setchips(ctx, user: discord.Member = None, amount: int = None):
     author = ctx.message.author
+    channel = client.get_channel(868125861356908594)
+    emoji = client.get_emoji(867177297659822100)
     balance = users1.find_one( { 'id': author.id } )["chips"]
     balance = amount
     users1.update_one( { "id": author.id }, { "$set": { "chips": balance } } )
     users1.update_one( { "id": user.id }, { "$set": { "chips": balance } } )
     if author == user:
+        await channel.send( embed = discord.Embed(description = f'{author.mention} установил себе значение фишек на - **__{ int(amount) } {emoji}__**\n**В каннале { ctx.channel.name }', color = 0x70D934) ) #logs
         await ctx.send( embed = discord.Embed(description = f'**{author.mention} изменил себе количество фишек на - __{ int(amount) } :coin:__**', color = 0x70D934) )
     elif balance == 0:
+        await channel.send( embed = discord.Embed(description = f'{author.mention} установил количество фишек пользователю {user.mention} на значение - **__{ int(amount) } {emoji}__**\n**В каннале { ctx.channel.name }**', color = 0x70D934) )  #logs
         await ctx.send(embed = discord.Embed(description = f'**Баланс пользователя { user.mention } обнулен.**', color = 0x70D934))
     else:
+        await channel.send( embed = discord.Embed(description = f'{author.mention} установил количество фишек пользователю {user.mention} на значение - **__{ int(amount) } {emoji}__**\n**В каннале { ctx.channel.name }**', color = 0x70D934) ) #logs
         await ctx.send(embed = discord.Embed(description = f'**{author.mention} изменил количество фишек пользователю { user.mention } на - __{ int(amount) } :coin:__**', color = 0x70D934))
 
 @setchips.error
@@ -937,18 +995,134 @@ async def timely( ctx ):
             times = time.strftime( '`%H:%M`', tim1 )
             await ctx.send(f"**До следующего использования данной команды должно пройти:\n{ times }\n\n**")
 
+@client.command()
+@has_permissions(administrator = True)
+async def removestaff(ctx, member: discord.Member):
+    rolestaff = discord.utils.get( ctx.guild.roles, id = 725309372162637884 )
+    author = ctx.message.author
+    messdate = datetime.datetime.fromtimestamp( time.time() ).strftime('%d.%m.%Y')
+    if unic.count_documents({"id": member.id}) != 0:
+        unic.delete_one( { "id": member.id } )
+        await member.remove_roles( rolestaff )
+        return await ctx.send(embed = discord.Embed(description = f'**{member.mention}, Вас лишили роли <@&828470967722442782>.**\n\n__{messdate}__'))
+    if unic.count_documents({"id": member.id}) == 0:
+        await ctx.send(embed = discord.Embed(description = 'Участник не Руководитель'))
 
 
+@client.command()
+@has_permissions(administrator = True)
+async def removemoder(ctx, member: discord.Member):
+    rolemoder = discord.utils.get( ctx.guild.roles, id = 725309372162637884 )
+    author = ctx.message.author
+    messdate = datetime.datetime.fromtimestamp( time.time() ).strftime('%d.%m.%Y')
+    if moderation.count_documents({"id": member.id}) != 0:
+        moderation.delete_one( { "id": member.id } )
+        await member.remove_roles( rolemoder )
+        return await ctx.send(embed = discord.Embed(description = f'**{member.mention}, Вас лишили роли <@&725309372162637884>.**\n\n__{messdate}__'))
+    if moderation.count_documents({"id": member.id}) == 0:
+        await ctx.send(embed = discord.Embed(description = 'Участник не Модератор'))
+
+
+@client.command()
+@has_permissions(administrator = True)
+async def makemoder(ctx, member: discord.Member):
+    rolemoder = discord.utils.get( ctx.guild.roles, id = 725309372162637884 )
+    author = ctx.message.author
+    messdate = datetime.datetime.fromtimestamp( time.time() ).strftime('%d.%m.%Y')
+    post = {
+        "id": member.id,
+        "kicks": 0,
+        "rep": 0,
+        "warns": 0,
+        "bans": 0,
+        "muted": 0,
+        "mwarns": 0,
+        "date": messdate,
+        }
+    moderation.insert_one(post)
+    await member.add_roles( rolemoder )
+    await ctx.send(embed = discord.Embed(description = f'{member.mention}, Вы назначены модератором.\nИспользуйте **__!mpanel__** для информации.'))
+    await member.send(f'{author.display_name} назначил Вас модератором.\n**__Используйте !mpanel в любом из каналов для просмотра Вашей статистики__**')
+
+
+@client.command()
+@has_permissions(administrator = True)
+async def makestaff(ctx, member: discord.Member):
+    rolestaff = discord.utils.get( ctx.guild.roles, id = 828470967722442782 )
+    author = ctx.message.author
+    messdate = datetime.datetime.fromtimestamp( time.time() ).strftime('%d.%m.%Y')
+    post = {
+        "id": member.id,
+        "kicks": 0,
+        "staffcoin": 0,
+        "date": messdate,
+        }
+    unic.insert_one(post)
+    await member.add_roles( rolestaff )
+    await member.send(f'**{author.display_name} включил Вас в список руководства семьи.**')
 
 
 
 @client.command()
-async def fwarn( ctx, user: discord.Member = None, member: discord.Member = None, reason  = None):
+async def moders( ctx ):
+        counter = 0
+        sec = client.get_emoji(868111109712932926)
+        embed = discord.Embed(title='**Действующие модераторы:**', color = 0x9A3FD5)
+        for row in moderation.find().sort( 'id', pymongo.DESCENDING ):
+            if counter == 10: break
+            usr = ctx.guild.get_member( row['id'] )
+            if usr is not None:
+                if not usr.bot:
+                    counter += 1
+                    embed.add_field(name=f'**№ { counter }.** { usr.display_name }', value = f'{sec}', inline = False)
+                    embed.set_footer(text = f'Вызвано: {ctx.message.author}', icon_url = ctx.message.author.avatar_url)
+        await ctx.send(embed = embed)
+
+    
+
+
+
+@client.command()
+@has_permissions(administrator = True)
+async def mwarn( ctx, user: discord.Member = None, member: discord.Member = None, reason  = None):
     author = ctx.message.author
+    rolemoder = discord.utils.get( ctx.guild.roles, id = 725309372162637884 )
+    warning = moderation.find_one( { "id": user.id } )["warns"]
+    if moderation.count_documents( { "id": user.id } ) == 0:
+        await ctx.send( embed = discord.Embed(description = f"**Участник не Модератор!**", color = 0x3D3FDC) )
+    if moderation.count_documents( { "id": user.id } ) != 0:
+        warning += 1
+        moderation.update_one( { "id": user.id }, { "$set": { "warns": warning } } )
+        await ctx.send(embed = discord.Embed(description = f'**Модератор {user.mention} получил { warning } предупреждение из 3 от { author.mention }**\n**__Причина:__ {reason}.**', color = 0x70D934))
+    if warning >= 3:
+        moderation.delete_one( { "id": user.id } )
+        await user.remove_roles( rolemoder )
+        await ctx.send(embed = discord.Embed(description = f'{ user.mention } был лишен роли <@&725309372162637884> за 3/3 предупреждений.'), color = 0x3D3FDC)
+
+
+@mwarn.error
+async def mwarn_error(ctx,error):
+    if isinstance (error, commands.MissingRequiredArgument):
+        emb = discord.Embed(description = f'{ctx.author.mention}, **Введите команду корректно!**\n\n**__Пример:__ !mwarn @Участник [Причина]**', color = 0xF03426)
+        emb.set_thumbnail(url='https://aliexpressom.ru/images/aliexpressom/2017/12/oshibka-pri-sintaksicheskom-analize-paketa.jpeg')
+        await ctx.send(embed = emb)
+    if isinstance(error, commands.MissingPermissions):
+        emb = discord.Embed(description = f'{ctx.author.mention}, **у Вас нет доступа к данной команде.**', color = 0xF03426)
+        emb.set_thumbnail(url='https://aliexpressom.ru/images/aliexpressom/2017/12/oshibka-pri-sintaksicheskom-analize-paketa.jpeg')
+        await ctx.send(embed = emb)
+
+
+
+@client.command()
+async def fwarn( ctx, user: discord.Member = None, reason  = None):
+    author = ctx.message.author
+    fwarns = moderation.find_one( { "id": author.id } )['warns']
+    fwarns += 1
+    moderation.update_one( { "id": author.id }, { "$set": { "warns": fwarns } } )
     warning = users1.find_one( { "id": user.id } )["warns"]
     warning += 1
     users1.update_one( { "id": user.id }, { "$set": { "warns": warning } } )
-    await ctx.send(embed = discord.Embed(description = f'**{author.mention} выдал { warning } предупреждение из 3 пользователю { user.mention }**', color = 0x70D934))
+    await ctx.send(embed = discord.Embed(description = f'**{author.mention} выдал { warning } предупреждение из 3 пользователю { user.mention }**\n\n**__Причина:__** {reason}', color = 0x70D934))
     if warning >= 3:
         await ctx.send(f'{ user.mention } был заблокирован так как получил 3/3 предупреждений')
         await member.ban(reason='3/3 предупреждений')
@@ -1144,11 +1318,13 @@ async def clear_error(ctx,error):
 @commands.has_permissions(administrator = True)
 async def ban (ctx, member: discord.Member, *, reason = None):
     emb = discord.Embed (title = 'Бан :lock:', colour = discord.Color.dark_red())
-
+    author = ctx.message.author
     await ctx.channel.purge(limit = 1)
 
     await member.ban(reason = reason)
-
+    bans = moderation.find_one( { "id": author.id } )['bans']
+    bans += 1
+    moderation.update_one( { "id": author.id }, { "$set": { "bans": bans } } )
     emb.set_author (name = member.name, icon_url = member.avatar_url)
     emb.add_field (name = 'Пользователь заблокирован', value = 'Блокировка пользователя : {}'.format(member.mention))
     emb.set_footer (text = 'Был заблокирован администратором {}'.format (ctx.author.name), icon_url = ctx.author.avatar_url)
@@ -1296,6 +1472,10 @@ async def weather( ctx, arg ):
 @commands.has_permissions(view_audit_log = True)
 
 async def kick (ctx, member: discord.Member, *, reason):
+    author = ctx.message.author
+    kicks = moderation.find_one( { "id": author.id } )['kicks']
+    kicks += 1
+    moderation.update_one( { "id": author.id }, { "$set": { "kicks": kicks } } )
     emb = discord.Embed (title = 'Kick :wave:', colour = discord.Color.red())
     await member.kick(reason = reason)
     emb.set_author (name = member.name, icon_url = member.avatar_url)
@@ -1326,7 +1506,11 @@ async def kick_error(ctx,error):
 
 async def mute (ctx, member: discord.Member, time:int, reason):
     channel = client.get_channel( 725338050946924564 )
+    author = ctx.message.author
     rolemute = discord.utils.get( ctx.guild.roles, id = 794997077142667284 )
+    mutes = moderation.find_one( { "id": author.id } )['muted']
+    mutes += 1
+    moderation.update_one( { "id": author.id }, { "$set": { "muted": mutes } } )
     emb = discord.Embed(title=f"🔇 Использована команда Mute", color = 0xff0000)
     emb.add_field(name = 'Модератор', value = ctx.message.author.mention, inline = False)
     emb.add_field(name = 'Нарушитель', value = member.mention)
