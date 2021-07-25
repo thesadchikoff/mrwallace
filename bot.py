@@ -160,7 +160,12 @@ async def on_message( message ):
 @client.event
 
 async def on_member_remove(member):
+
     channelleave = client.get_channel( 796917006691336263 )
+    users1.delete_one( { "_id": member.id } )
+    unic.delete_one( { "id": member.id } )
+    buy_role.delete_one( { "id": member.id } )
+    moderation.delete_one( { "id": member.id } )
     emb = discord.Embed( description = f'❌  Пользователь { member.mention } был исключен из сервера', color = 0xe74c3c )
     await channelleave.send( embed = emb )
 
@@ -177,10 +182,14 @@ async def on_member_join(member):
     emb.set_footer( text = 'Welcome to Wallace Dynasty Discord server!', icon_url = 'https://cdn.discordapp.com/avatars/797171215285747772/a1f598f82f2ece5fc7f1a9f8ce247efa.webp?size=1024' )
     await member.add_roles( role )
     await channel.send( embed = emb )
+    for row in users1.find():
+        if "lvlch" not in row:
+            users1.update_one({"id": row["id"]}, {"$set": {"lvlch": 50}})
     post = {
         "id": member.id,
         "balance": 500,
         "lvl": 0,
+        "lvlch": 50,
         "exp": 0,
         "rep": 0,
         "warns": 0,
@@ -291,7 +300,7 @@ async def removecapt(ctx, member: discord.Member):
 @client.command()
 async def slots( ctx, amount: int = None ):
 	author = ctx.message.author
-	if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
+	if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬⠇chat' or ctx.channel.name == '🎰⠇casino':
 		if amount:
 			if 'chips' in users1.find_one( { "id": author.id } ):
 				if( casino1.count_documents( { "author_id": author.id } ) == 0 ):
@@ -329,7 +338,7 @@ async def slots( ctx, amount: int = None ):
 
 @client.command()
 async def bet( ctx, user: discord.Member = None, amount: int = None ):
-    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
+    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬⠇chat' or ctx.channel.name == '🎰⠇casino':
         if user and amount:
             if user.id != 797171215285747772:
                 author = ctx.message.author
@@ -371,7 +380,7 @@ async def bet( ctx, user: discord.Member = None, amount: int = None ):
 async def yes( ctx ):
     author = ctx.message.author
     
-    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
+    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬⠇chat' or ctx.channel.name == '🎰⠇casino':
         
         if casino1.count_documents( { "member_id": author.id } ) != 0:
             a = random.randint(0,6)
@@ -413,7 +422,7 @@ async def yes( ctx ):
 async def no( ctx ):		
 	author = ctx.message.author
 
-	if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
+	if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬⠇chat' or ctx.channel.name == '🎰⠇casino':
 		if casino1.count_documents( { 'member_id': author.id } ) != 0:
 			casino1.delete_one( { "member_id": author.id } )
 			return await ctx.send(embed = discord.Embed(description = f"{ author.mention } отклонил ставку!", color = 0xF02925))
@@ -425,7 +434,7 @@ async def no( ctx ):
 @client.command()
 async def cancel( ctx ):
     author = ctx.message.author
-    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬family-chat' or ctx.channel.name == '🎰game-channel':
+    if ctx.channel.name == 'test-channel' or ctx.channel.name == '💬⠇chat' or ctx.channel.name == '🎰⠇casino':
         if casino1.count_documents( { "author_id": author.id } ) != 0:
             casino1.delete_one( { "author_id": author.id } )
             await ctx.send(embed = discord.Embed(description = "Вы успешно отменили ставку!", color = 0x5CFA34))
@@ -437,7 +446,7 @@ async def cancel( ctx ):
 
 @client.command()
 async def buychips( ctx, amount: int = None ):
-    if ctx.channel.name == '🎰game-channel' or ctx.channel.name == 'test-channel':
+    if ctx.channel.name == '🎰⠇casino' or ctx.channel.name == 'test-channel':
         author = ctx.message.author
         cash = users1.find_one({ "id": author.id })['balance']
         if amount:
@@ -469,7 +478,7 @@ async def buychips( ctx, amount: int = None ):
 @client.command()
 async def chips( ctx, user: discord.Member = None ):
 	author = ctx.message.author
-	if ctx.channel.name == '🎰game-channel' or ctx.channel.name == 'test-channel':
+	if ctx.channel.name == '🎰⠇casino' or ctx.channel.name == 'test-channel':
 		if user:
 			if 'chips' in users1.find_one( { "id": user.id } ):
 				chips = users1.find_one( { "id": user.id } )['chips']
@@ -489,7 +498,7 @@ async def chips( ctx, user: discord.Member = None ):
 
 @client.command()
 async def sellchips( ctx, amount: int = None ):
-	if ctx.channel.name == '🎰game-channel' or ctx.channel.name == 'test-channel':
+	if ctx.channel.name == '🎰⠇casino' or ctx.channel.name == 'test-channel':
 		author = ctx.message.author
 		cash = users1.find_one({ "id": author.id })['balance']
 		if amount:
@@ -550,7 +559,7 @@ async def staff(ctx):
 
 @client.command()
 async def buy( ctx, id = None ):
-    if ctx.channel.name == '💬family-chat' or ctx.channel.name == 'test-channel' or ctx.channel.name == '🎰game-channel':
+    if ctx.channel.name == '💬⠇chat' or ctx.channel.name == 'test-channel' or ctx.channel.name == '🎰⠇casino':
         if id:
             author = ctx.message.author
             i = 0
@@ -569,7 +578,8 @@ async def buy( ctx, id = None ):
                 print('lll')
             if i1 == 1:
                 for row in users1.find( { "id": author.id } ):
-                    a = row['balance']
+                    if type == 'balance': a = row['balance']
+                    if type == 'chips': a = row['chips']
                     if cost > a: return await ctx.send(f"**__Покупка невозможна!__**\nУ Вас недостаточно средств.")
                     role = ctx.guild.get_role( int( role_id ) )
                     if role in author.roles: return await ctx.send(f"**__Покупка невозможна!__**\nУ Вас уже куплена эта роль.")
@@ -594,26 +604,24 @@ async def buy( ctx, id = None ):
 
 @client.command()
 async def shop( ctx, player: discord.Member = None ):
-	if ctx.channel.name == '💬family-chat' or ctx.channel.name == 'test-channel' or ctx.channel.name == '🎰game-channel':
-		
-		i = 0
-		i1 = 0
-		message = ''
-		emoji = ':euro:'
-		for row in shop1.find():
-			if row['value'] == 'balance': emoji = ':euro:'
-			i += 1
-			if ( i == 2 or i == 4 or i == 6 or i == 8 or i == 10 or i == 12 or i == 14 or i == 16 or i == 18 ): i1 = 1
-			role = ctx.guild.get_role( int( row['_id'] ) )
-			message += f'**№{ str(i) } { str(role.mention) }: { row["cost"] } { emoji }**\n\n' 
+    if ctx.channel.name == '💬⠇chat' or ctx.channel.name == 'test-channel' or ctx.channel.name == '🎰⠇casino':
+        i = 0
+        i1 = 0
+        message = ''
+        emoji = ':euro:'
+        for row in shop1.find():
+            if row['value'] == 'balance': emoji = ':euro:'
+            if row['value'] == 'chips': emoji = client.get_emoji(867177297659822100)
+            i += 1
+            if ( i == 2 or i == 4 or i == 6 or i == 8 or i == 10 or i == 12 or i == 14 or i == 16 or i == 18 ): i1 = 1
+            role = ctx.guild.get_role( int( row['_id'] ) )
+            message += f'**№{ str(i) } { str(role.mention) }: { row["cost"] } { emoji }**\n\n' 
 			# if i1 == 1: 
 			# 	message += '\n\n'
 			# 	i1 = 0
-
-		embed = discord.Embed(title=f"__Магазин__:", description = message, color=0x9A3FD5)
-		embed.set_footer( text = '!buy <номер> - Для приобретения какой-либо роли.\nСрок роли с момента её приобретения - 14 дней.' )
-
-		await ctx.channel.send(embed = embed)
+        embed = discord.Embed(title=f"__Магазин__:", description = message, color=0x9A3FD5)
+        embed.set_footer( text = '!buy <номер> - Для приобретения какой-либо роли.\nСрок роли с момента её приобретения - 14 дней.' )
+        await ctx.channel.send(embed = embed)
 
 
 @client.command()
@@ -621,7 +629,7 @@ async def add_product( ctx, role_id, cost, value1 ):
     await ctx.channel.purge(limit = 1)
     author = ctx.message.author
     if( role_id and cost and value1 ):
-        if( value1 == 'вирт'):
+        if( value1 == 'balance' or value1 == 'chips'):
             role = ctx.guild.get_role( int( role_id ) )
             if role in ctx.guild.roles:
                 post = {
@@ -631,7 +639,7 @@ async def add_product( ctx, role_id, cost, value1 ):
                 }
                 shop1.insert_one( post )
                 
-                await ctx.send( embed = discord.Embed(description = f"**{ author.mention } добавил роль { role.mention } в магазин!**\n**__Заданная стоимость: {cost} :euro:__**", color = 0x70D934) )
+                await ctx.send( embed = discord.Embed(description = f"**{ author.mention } добавил роль { role.mention } в магазин!**", color = 0x70D934) )
 
 
 @add_product.error
@@ -1476,6 +1484,9 @@ async def kick (ctx, member: discord.Member, *, reason):
     kicks = moderation.find_one( { "id": author.id } )['kicks']
     kicks += 1
     moderation.update_one( { "id": author.id }, { "$set": { "kicks": kicks } } )
+    kickss = unic.find_one( { "id": author.id } )['kickss']
+    kickss += 1
+    unic.update_one( { "id": author.id }, { "$set": { "kicks": kickss } } )
     emb = discord.Embed (title = 'Kick :wave:', colour = discord.Color.red())
     await member.kick(reason = reason)
     emb.set_author (name = member.name, icon_url = member.avatar_url)
