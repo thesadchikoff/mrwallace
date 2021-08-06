@@ -14,6 +14,7 @@ from discord import channel
 from discord import member
 from discord.colour import Color
 from discord.ext import commands, tasks
+from discord_components import DiscordComponents, Button, ButtonStyle
 from discord.ext.commands import Bot
 from pymongo import MongoClient, message
 import random
@@ -92,6 +93,7 @@ unic = cluster.Economy.unic
 @client.event
 
 async def on_ready():
+    DiscordComponents(client)
     print( '\nБот успешно подключен!' )
     guild = client.get_guild( 709144637020831774 )
     # for row in users1.find():
@@ -151,6 +153,7 @@ async def on_message( message ):
 
                     return await message.channel.send( embed=embed )
         await client.process_commands(message)
+
 
 
 
@@ -241,6 +244,45 @@ async def create_role(ctx):
     await client.edit_role( server, new_role, name = new_role )
     
 
+@client.command()
+async def but(ctx):
+    await ctx.send(
+    embed = discord.Embed(title = 'Invite to party', timestamp = ctx.message.created_at ),
+    components = [
+        Button(style=ButtonStyle.green, label = "Accept", emoji = "☠️"),
+        Button(style=ButtonStyle.red, label = "Decline", emoji = "👹"),
+        Button(style=ButtonStyle.blue, label = "I'll think...", emoji = "👽")
+        ]
+    )
+    responce = await client.wait_for("button.click")
+    if responce.channel == ctx.channel:
+        if responce.component.label == "Accept":
+            await responce.respond(content="Great!")
+        else:
+            await responce.respond(
+                embed = discord.Embed(title = "Are you sure?"),
+                components = [
+                    Button(style=ButtonStyle.blue, label = "YES", emoji = "👍"),
+                    Button(style=ButtonStyle.red, label = "NO", emoji = "👎")
+                ]
+            )
+
+
+@client.command()
+async def market(ctx, arg, *, arg2):
+    author = author = ctx.message.author
+    if ctx.channel.name == "💰⠇shop":
+        await ctx.message.delete()
+        if arg == "Купить":
+            emb = discord.Embed(description = f'**{author.mention} хочет {arg} у Вас товар(ы)!**\nСписок товаров, хоторые нужны {author.name}:\n**{arg2}**', timestamp = ctx.message.created_at)
+            await ctx.send(f'@here')
+            return await ctx.send(embed = emb)
+        if arg == "Продать":
+            emb = discord.Embed(description = f'**{author.mention} хочет {arg} Вам товар(ы)!**\nСписок товаров, хоторые {author.name} продает:\n**{arg2}**', timestamp = ctx.message.created_at)
+            await ctx.send(f'@here')
+            return await ctx.send(embed = emb)
+        else:
+            await ctx.send(embed = discord.Embed(description = f'{author.mention}, вы неверно ввели команду.\nПример: `!market Купить/Продать [Список товарок]`'))
 
 
 #GIVE ROLE COMMAND'S
@@ -707,8 +749,8 @@ async def user( ctx, user: discord.Member = None ):
     wark = client.get_emoji(868111109712932926)
     levs = client.get_emoji(868112129910272060)
     ops = client.get_emoji(868112072905461760)
+    roleus = ctx.guild.get_role( 867087323509555230 )
     i = 0
-    
     rep = users1.find_one( { 'id': author.id } )[ "rep" ]
     balance = users1.find_one( { 'id': author.id } )[ "balance" ]
     lvl = users1.find_one( { 'id': author.id } )[ "lvl" ]
@@ -721,6 +763,8 @@ async def user( ctx, user: discord.Member = None ):
     # if users1.count_documents({'id': author.id}) !=0:
     #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(822200492003164181).mention}')
     #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(798225498366935080).mention}')
+    if roleus in author.roles:
+        emb.add_field(name = "Второстепенная роль:", value = f'{ roleus.mention }')
     if moderation.count_documents({'id': author.id}) != 0:
         emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(725309372162637884).mention}')
     if unic.count_documents({'id': author.id}) != 0:
@@ -1026,6 +1070,7 @@ async def removemoder(ctx, member: discord.Member):
     if moderation.count_documents({"id": member.id}) != 0:
         moderation.delete_one( { "id": member.id } )
         await member.remove_roles( rolemoder )
+        await member.send(f'**{ author.name }** снял с Вас роль модератора.')
         return await ctx.send(embed = discord.Embed(description = f'**{member.mention}, Вас лишили роли <@&725309372162637884>.**\n\n__{messdate}__'))
     if moderation.count_documents({"id": member.id}) == 0:
         await ctx.send(embed = discord.Embed(description = 'Участник не Модератор'))
