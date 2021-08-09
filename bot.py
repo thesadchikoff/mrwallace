@@ -97,8 +97,8 @@ async def on_ready():
     print( '\nБот успешно подключен!' )
     guild = client.get_guild( 709144637020831774 )
     # for row in users1.find():
-    #     if "chips" not in row:
-    #         users1.update_one({"id": row["id"]}, {"$set": {"chips": 0}})
+    #     if "biof" not in row:
+    #         users1.update_one({"id": row["id"]}, {"$set": {"bio": "Описание не установлено." }})
     for member in guild.members:
         post = {
             "id": member.id,
@@ -108,7 +108,8 @@ async def on_ready():
             "exp": 0,
             "rep": 0,
             "warns": 0,
-            "chips": 0
+            "chips": 0,
+            "bio": 'Описание не установлено.'
         }
         if users1.count_documents( { 'id': member.id } ) == 0:
             users1.insert_one( post )          
@@ -196,7 +197,8 @@ async def on_member_join(member):
         "exp": 0,
         "rep": 0,
         "warns": 0,
-        "chips": 0
+        "chips": 0,
+        "bio": 'Описание не установлено.'
     }
     if users1.count_documents({'id': member.id}) == 0:
         users1.insert_one(post)
@@ -268,10 +270,30 @@ async def but(ctx):
             )
 
 
+
+@client.command()
+async def setbio(ctx, *, arg):
+    author = ctx.message.author
+    users1.update_one( { "id": author.id }, { "$set": { "bio": arg } } )
+    await ctx.send( embed = discord.Embed( description = f'{ author.mention }, вы изменили своё описание на **{ arg }**!' ) )
+
+
+@client.command()
+async def bio(ctx, user: discord.Member = None):
+    author = ctx.message.author
+    default = "Описание не установлено, введите !bio [Текст] для установки описания."
+    if user: author = user
+        # if 'bio' in users1.count_documents( { "id": author.id } ) == default:
+        #     await ctx.send( embed = discord.Embed( description = f'У пользователя { author.mention } не установлено описание.' ) )
+    bio_stat = users1.find_one( { 'id': author.id } )[ "bio" ]
+    await ctx.send( embed = discord.Embed( description = f'Описание участника { author.mention }:\n```{ bio_stat }```' ) )
+
+
+
 @client.command()
 async def market(ctx, arg, *, arg2):
-    author = author = ctx.message.author
-    if ctx.channel.name == "💰⠇shop":
+    author = ctx.message.author
+    if ctx.channel.name == "💰⠇shop" or ctx.channel.name == 'test':
         await ctx.message.delete()
         if arg == "Купить":
             emb = discord.Embed(description = f'**{author.mention} хочет {arg} у Вас товар(ы)!**\nСписок товаров, хоторые нужны {author.name}:\n**{arg2}**', timestamp = ctx.message.created_at)
@@ -279,7 +301,7 @@ async def market(ctx, arg, *, arg2):
             return await ctx.send(embed = emb)
         if arg == "Продать":
             emb = discord.Embed(description = f'**{author.mention} хочет {arg} Вам товар(ы)!**\nСписок товаров, хоторые {author.name} продает:\n**{arg2}**', timestamp = ctx.message.created_at)
-            await ctx.send(f'@here')
+            # await ctx.send(f'@here')
             return await ctx.send(embed = emb)
         else:
             await ctx.send(embed = discord.Embed(description = f'{author.mention}, вы неверно ввели команду.\nПример: `!market Купить/Продать [Список товарок]`'))
@@ -595,8 +617,19 @@ async def balance( ctx, user: discord.Member = None ):
 
 #staff
 @client.command()
-async def staff(ctx):
-    await ctx.send("**Действующее руководство семьи:**\n*Глава семьи - Strozza Wallace*\n\n**Заместители главы:**\n*Melissa Wallace\nFederico Wallace*")
+async def staff( ctx ):
+        counter = 0
+        sec = client.get_emoji(868111109712932926)
+        embed = discord.Embed(title='**Действующие руководители семьи:**', color = 0x9A3FD5)
+        for row in unic.find().sort( 'id', pymongo.DESCENDING ):
+            if counter == 10: break
+            usr = ctx.guild.get_member( row['id'] )
+            if usr is not None:
+                if not usr.bot:
+                    counter += 1
+                    embed.add_field(name=f'**№ { counter }.** { usr.display_name }', value = f'{sec}', inline = False)
+                    embed.set_footer(text = f'Вызвано: {ctx.message.author}', icon_url = ctx.message.author.avatar_url)
+        await ctx.send(embed = embed)
 
 
 @client.command()
@@ -754,12 +787,13 @@ async def user( ctx, user: discord.Member = None ):
     rep = users1.find_one( { 'id': author.id } )[ "rep" ]
     balance = users1.find_one( { 'id': author.id } )[ "balance" ]
     lvl = users1.find_one( { 'id': author.id } )[ "lvl" ]
+    bio_view = users1.find_one( { 'id': author.id } )[ "bio" ]
     exp = users1.find_one( { 'id': author.id } )[ "exp" ]
     idi = users1.find_one( { 'id': author.id } )[ "id" ]
     war = users1.find_one( { 'id': author.id } )[ "warns" ]
     lvlch = users1.find_one({'id': author.id})["lvlch"]
     chips = users1.find_one({'id': author.id})["chips"]
-    emb = discord.Embed(description = f"**Профиль участника { author.mention }**\n\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**", color=0x9A3FD5)
+    emb = discord.Embed(description = f'**Профиль участника { author.mention }**\n\n\n**__Описание участника:__**\n*"{ bio_view }*"\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**', color=0x9A3FD5)
     # if users1.count_documents({'id': author.id}) !=0:
     #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(822200492003164181).mention}')
     #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(798225498366935080).mention}')
