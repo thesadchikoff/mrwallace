@@ -12,6 +12,7 @@ from discord import role
 from discord import mentions
 from discord import channel
 from discord import member
+from discord import Member
 from discord.colour import Color
 from discord.ext import commands, tasks
 from discord_components import DiscordComponents, Button, ButtonStyle
@@ -28,8 +29,11 @@ from pyowm.utils import timestamps
 from pyowm.utils.config import get_default_config
 
 
+
 import requests
 from discord import utils
+from PIL import Image, ImageFont, ImageDraw
+import io
 
 PREFIX = '!'
 
@@ -96,9 +100,9 @@ async def on_ready():
     DiscordComponents(client)
     print( '\nБот успешно подключен!' )
     guild = client.get_guild( 709144637020831774 )
-    # for row in users1.find():
-    #     if "biof" not in row:
-    #         users1.update_one({"id": row["id"]}, {"$set": {"bio": "Описание не установлено." }})
+    for row in users1.find():
+        if "wcoin" not in row:
+            users1.update_one({"id": row["id"]}, {"$set": {"wcoin": 0 }})
     for member in guild.members:
         post = {
             "id": member.id,
@@ -109,6 +113,7 @@ async def on_ready():
             "rep": 0,
             "warns": 0,
             "chips": 0,
+            "wcoin": 0,
             "bio": 'Описание не установлено.'
         }
         if users1.count_documents( { 'id': member.id } ) == 0:
@@ -198,12 +203,17 @@ async def on_member_join(member):
         "rep": 0,
         "warns": 0,
         "chips": 0,
+        "wcoin": 0,
         "bio": 'Описание не установлено.'
     }
     if users1.count_documents({'id': member.id}) == 0:
         users1.insert_one(post)
 
-    
+
+
+
+
+
 @client.command()
 async def cub(ctx, arg: int = None, amount: int = None):
     author = ctx.message.author
@@ -275,7 +285,7 @@ async def but(ctx):
 async def setbio(ctx, *, arg):
     author = ctx.message.author
     users1.update_one( { "id": author.id }, { "$set": { "bio": arg } } )
-    await ctx.send( embed = discord.Embed( description = f'{ author.mention }, вы изменили своё описание на **{ arg }**!' ) )
+    await ctx.send( embed = discord.Embed( description = f'{ author.mention }, вы изменили своё описание на -\n>>> { arg }!' ) )
 
 
 @client.command()
@@ -286,7 +296,7 @@ async def bio(ctx, user: discord.Member = None):
         # if 'bio' in users1.count_documents( { "id": author.id } ) == default:
         #     await ctx.send( embed = discord.Embed( description = f'У пользователя { author.mention } не установлено описание.' ) )
     bio_stat = users1.find_one( { 'id': author.id } )[ "bio" ]
-    await ctx.send( embed = discord.Embed( description = f'Описание участника { author.mention }:\n```{ bio_stat }```' ) )
+    await ctx.send( embed = discord.Embed( description = f'Описание участника { author.mention }:\n>>> { bio_stat }' ) )
 
 
 
@@ -683,14 +693,14 @@ async def shop( ctx, player: discord.Member = None ):
         i = 0
         i1 = 0
         message = ''
-        emoji = ':euro:'
+        emoji = client.get_emoji(867177297659822100)
         for row in shop1.find():
             if row['value'] == 'balance': emoji = ':euro:'
             if row['value'] == 'chips': emoji = client.get_emoji(867177297659822100)
             i += 1
             if ( i == 2 or i == 4 or i == 6 or i == 8 or i == 10 or i == 12 or i == 14 or i == 16 or i == 18 ): i1 = 1
             role = ctx.guild.get_role( int( row['_id'] ) )
-            message += f'**№{ str(i) } { str(role.mention) }: { row["cost"] } { emoji }**\n\n' 
+            message += f'**№{ str(i) } { (role.mention) }: { row["cost"] } { emoji }**\n\n' 
 			# if i1 == 1: 
 			# 	message += '\n\n'
 			# 	i1 = 0
@@ -701,7 +711,7 @@ async def shop( ctx, player: discord.Member = None ):
 
 @client.command()
 async def add_product( ctx, role_id, cost, value1 ):
-    await ctx.channel.purge(limit = 1)
+    await ctx.channel.purge(limit = 0)
     author = ctx.message.author
     if( role_id and cost and value1 ):
         if( value1 == 'balance' or value1 == 'chips'):
@@ -770,6 +780,56 @@ async def mpanel(ctx, user: discord.Member = None):
     else:
         await ctx.send(embed = discord.Embed(description = f"Участник не является Модератором"))
 
+
+@client.command()
+async def card( ctx ):
+    img = Image.open('card.jpg')
+    url = str(ctx.author.avatar_url)[:-10]
+    urls = 'https://cdn.discordapp.com/emojis/774549438030151681.png?v=1'
+    author = ctx.message.author
+    bio_view = users1.find_one( { 'id': author.id } )[ "bio" ]
+    balance = users1.find_one( { 'id': author.id } )[ "balance" ]
+    chips = users1.find_one({'id': author.id})["chips"]
+    roleus = ctx.guild.get_role( 867087323509555230 )
+    lvl = users1.find_one( { 'id': author.id } )[ "lvl" ]
+    lvlch = users1.find_one({'id': author.id})["lvlch"]
+    rep = users1.find_one( { 'id': author.id } )[ "rep" ]
+    exp = users1.find_one( { 'id': author.id } )[ "exp" ]
+    responce = requests.get( url, stream = True )
+    responce = Image.open( io.BytesIO(responce.content) )
+    responce = responce.convert('RGBA')
+    responce = responce.resize( ( 100, 100 ), Image.ANTIALIAS )
+
+    img.paste(responce, (55, 55, 155, 155))
+
+    idraw = ImageDraw.Draw(img)
+    name = ctx.author.name
+    tag = ctx.author.discriminator
+
+    headline = ImageFont.truetype( 'arial.ttf', 'times new roman.tff', size = 16 )
+    undertext = ImageFont.truetype( 'arial.ttf', 'times new roman.tff', size = 12 )
+
+    
+
+    idraw.text(( 202, 60 ), f'{name}#{tag}', font = headline, fill = ( 0, 0, 0 ))
+    idraw.text(( 202, 119 ), f'ID: {ctx.author.id}', font = undertext, fill = ( 0, 0, 0 ))
+    idraw.text(( 202, 139 ), f'Описание: {bio_view}', font = undertext, fill = ( 0, 0, 0 ))
+    idraw.text(( 69, 185 ), f'Уровень: {lvl}', font = undertext, fill = ( 0, 0, 0 ))
+    if roleus in author.roles:
+        idraw.text(( 202, 159 ), f'Уникальная роль: {roleus.name}', font = undertext, fill = ( 0, 0, 0 ))
+    idraw.text(( 63, 205 ), f'Репутация: {rep}', font = undertext, fill = ( 0, 0, 0 ))
+    idraw.text(( 202, 189 ), f'Количество фишек: {chips}', font = undertext, fill = ( 0, 0, 0 ))
+    idraw.text(( 202, 209 ), f'Баланс: {balance}', font = undertext, fill = ( 0, 0, 0 ))
+    
+
+
+    img.save('user_card.png')
+
+    await ctx.send(file = discord.File(fp = 'user_card.png'))
+
+
+
+
 #user
 @client.command()
 
@@ -777,11 +837,17 @@ async def user( ctx, user: discord.Member = None ):
     guild = client.get_guild( 709133637020831774 )
     author = ctx.message.author
     if user: author = user
+    online = client.get_emoji(875694482484518912)
+    offline = client.get_emoji(875694481993781268)
+    sleep = client.get_emoji(875694482379636766)
+    missing = client.get_emoji(875694481968627752)
     emoji = client.get_emoji(867177297659822100)
     erep = client.get_emoji(868109639676489768)
     wark = client.get_emoji(868111109712932926)
     levs = client.get_emoji(868112129910272060)
     ops = client.get_emoji(868112072905461760)
+    wlc = client.get_emoji(875137797391020042)
+    rls = client.get_emoji(875700530184351794)
     roleus = ctx.guild.get_role( 867087323509555230 )
     i = 0
     rep = users1.find_one( { 'id': author.id } )[ "rep" ]
@@ -793,16 +859,33 @@ async def user( ctx, user: discord.Member = None ):
     war = users1.find_one( { 'id': author.id } )[ "warns" ]
     lvlch = users1.find_one({'id': author.id})["lvlch"]
     chips = users1.find_one({'id': author.id})["chips"]
-    emb = discord.Embed(description = f'**Профиль участника { author.mention }**\n\n\n**__Описание участника:__**\n*"{ bio_view }*"\n\n**__Личная информация:__**\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**', color=0x9A3FD5)
+    wcoin = users1.find_one({'id': author.id})["wcoin"]
+    t = author.status
+    if t == discord.Status.online:
+        d = str(online) + " В сети"
+
+    t = author.status
+    if t == discord.Status.offline:
+        d = str(offline) + " Не в сети"
+
+    t = author.status
+    if t == discord.Status.idle:
+        d = str(sleep) + " Не активен"
+
+    t = ctx.message.author.status
+    if t == discord.Status.dnd:
+        d = str(missing) + " Не беспокоить"
+    emb = discord.Embed(description = f'**Профиль участника { author.mention }**\n\n\n**__Описание участника:__**\n> { bio_view }\n\n**__Личная информация:__**\n**{rls} Основная роль:** {author.top_role.mention}\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**\n**{wlc} Wallace Coin: __{ wcoin }__**', color=0x9A3FD5)
     # if users1.count_documents({'id': author.id}) !=0:
     #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(822200492003164181).mention}')
     #     emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(798225498366935080).mention}')
     if roleus in author.roles:
-        emb.add_field(name = "Второстепенная роль:", value = f'{ roleus.mention }')
+        emb.add_field(name = "Второстепенная роль:", value = f'{ roleus.mention }', inline = False)
     if moderation.count_documents({'id': author.id}) != 0:
-        emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(725309372162637884).mention}')
+        emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(725309372162637884).mention}', inline = False)
     if unic.count_documents({'id': author.id}) != 0:
-        emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(828470967722442782).mention}')
+        emb.add_field(name = "Уникальная роль:", value = f'{ctx.guild.get_role(828470967722442782).mention}', inline = False)
+    emb.add_field(name = 'Активность:', value = f'{d}')
     emb.set_thumbnail( url = author.avatar_url )
     emb.set_footer(text= f'ID участника { author.name } - { idi }')
     await ctx.send(embed=emb)
@@ -1456,6 +1539,8 @@ async def unban_error(ctx,error):
 
 
 
+
+
 #.help
 @client.command()
 
@@ -1463,41 +1548,87 @@ async def help( ctx ):
     await ctx.channel.purge( limit = 1 )
 
     
-    version = "v2.0"
-    emb1 = discord.Embed( title = 'Навигация по командам' )
-    emb1.add_field( name = '{}clear'.format( PREFIX ), value = 'Очистить чат 📬' )
-    emb1.add_field( name = '{}rep'.format( PREFIX ), value = 'Узнать репутацию (Свою/Участника) 🚩\n' )
-    emb1.add_field( name = '{}balance'.format( PREFIX ), value = 'Узнать баланс (Свой/Участника) 💶\n' )
-    emb1.add_field( name = '{}level'.format( PREFIX ), value = 'Узнать свой уровень и опыт 📄\n' )
-    emb1.add_field( name = '{}mute'.format( PREFIX ), value = 'Заглушить участника 🔇 [Для модераторов]\n' )
-    emb1.set_footer( icon_url = ctx.guild.owner.avatar_url, text = f'Mr. Wallace Bot by Strozza | { version }' )
-    
-    emb2 = discord.Embed( title = 'Навигация по командам' )
-    emb2.add_field( name = '{}unmute'.format( PREFIX ), value = 'Снять мут участнику 🔇 [*Для модераторов*]\n' )
-    emb2.add_field( name = '{}user'.format( PREFIX ), value = 'Узнать информацию о себе/участнике 📄\n' )
-    emb2.add_field( name = '{}kick'.format( PREFIX ), value = 'Выгнать участника 🔒\n' )
-    emb2.add_field( name = '{}staff'.format( PREFIX ), value = 'Список действующего руководства семьи 🔒\n' )
-    emb2.add_field( name = '{}give'.format( PREFIX ), value = 'Передать деньги участнику 💶\n' )
-    emb2.set_footer( icon_url = ctx.guild.owner.avatar_url, text = f'Mr. Wallace Bot by Strozza | { version }' )
-    
-    emb3 = discord.Embed( title = 'Навигация по командам' )
-    emb3.add_field( name = '{}ban'.format( PREFIX ), value = 'Заблокировать участника 🔒 [*Для руководителей*]\n' )
-    emb3.add_field( name = '{}bye'.format( PREFIX ), value = 'Попрощаться с ботом 🚩\n' )
-    emb3.add_field( name = '{}cub'.format( PREFIX ), value = 'Бросить кубик 🎲\n' )
-    emb3.add_field( name = '{}cinfo'.format( PREFIX ), value = 'Проверить забитые капты\n' )
-    emb3.add_field( name = '{}captureinfo'.format( PREFIX ), value = 'Забить капт (Только для роли **Manager of Capture** и выше ) 🚩\n' )
-    emb3.set_footer( icon_url = ctx.guild.owner.avatar_url, text = f'Mr. Wallace Bot by Strozza | { version }' )
-
-    embeds = [emb1, emb2, emb3]
-    reactions = ["⬅️", "➡️"]
-    message = await ctx.send(embed = emb1)
-    page = pag(client, message, only=ctx.author, use_more=False, reactions=reactions)
-    await page.start()
+    version = "v2.2"
+    emb = discord.Embed( title = 'Навигация по командам' )
+    emb.add_field( name = '{}clear'.format( PREFIX ), value = 'Очистить чат 📬' )
+    emb.add_field( name = '{}rep'.format( PREFIX ), value = 'Узнать репутацию (Свою/Участника) 🚩\n' )
+    emb.add_field( name = '{}balance'.format( PREFIX ), value = 'Узнать баланс (Свой/Участника) 💶\n' )
+    emb.add_field( name = '{}level'.format( PREFIX ), value = 'Узнать свой уровень и опыт 📄\n' )
+    emb.add_field( name = '{}mute'.format( PREFIX ), value = 'Заглушить участника 🔇 [Для модераторов]\n' )
+    emb.add_field( name = '{}unmute'.format( PREFIX ), value = 'Снять мут участнику 🔇 [*Для модераторов*]\n' )
+    emb.add_field( name = '{}user'.format( PREFIX ), value = 'Узнать информацию о себе/участнике 📄\n' )
+    emb.add_field( name = '{}kick'.format( PREFIX ), value = 'Выгнать участника 🔒\n' )
+    emb.add_field( name = '{}staff'.format( PREFIX ), value = 'Список действующего руководства семьи 🔒\n' )
+    emb.add_field( name = '{}give'.format( PREFIX ), value = 'Передать деньги участнику 💶\n' )
+    emb.add_field( name = '{}ban'.format( PREFIX ), value = 'Заблокировать участника 🔒 [*Для руководителей*]\n' )
+    emb.add_field( name = '{}bye'.format( PREFIX ), value = 'Попрощаться с ботом 🚩\n' )
+    emb.add_field( name = '{}cub'.format( PREFIX ), value = 'Бросить кубик 🎲\n' )
+    emb.add_field( name = '{}cinfo'.format( PREFIX ), value = 'Проверить забитые капты\n' )
+    emb.add_field( name = '{}captureinfo'.format( PREFIX ), value = 'Забить капт (Только для роли **Manager of Capture** и выше ) 🚩\n' )
+    emb.set_footer( icon_url = ctx.guild.owner.avatar_url, text = f'Mr. Wallace Bot by Strozza | { version }' )
+    await ctx.send(embed = emb)
 
 
 
 
+@client.command()
+async def stat(ctx,member:discord.Member = None, guild: discord.Guild = None):
+    await ctx.message.delete()
+    guild = client.get_guild( 709133637020831774 )
+    online = client.get_emoji(875694482484518912)
+    offline = client.get_emoji(875694481993781268)
+    sleep = client.get_emoji(875694482379636766)
+    missing = client.get_emoji(875694481968627752)
+    if member == None:
+        emb = discord.Embed(title="Информация о пользователе", color=ctx.message.author.color)
+        emb.add_field(name="Имя:", value=ctx.message.author.display_name,inline=False)
+        emb.add_field(name="Айди пользователя:", value=ctx.message.author.id,inline=False)
+        t = ctx.message.author.status
+        if t == discord.Status.online:
+            d = online + " В сети"
 
+        t = ctx.message.author.status
+        if t == discord.Status.offline:
+            d = offline + " Не в сети"
+
+        t = ctx.message.author.status
+        if t == discord.Status.idle:
+            d = sleep + " Не активен"
+
+        t = ctx.message.author.status
+        if t == discord.Status.dnd:
+            d = str(missing) + " Не беспокоить"
+
+        emb.add_field(name="Активность:", value=d,inline=False)
+        emb.add_field(name="Статус:", value=ctx.message.author.activity,inline=False)
+        emb.add_field(name="Роль на сервере:", value=f"{ctx.message.author.top_role.mention}",inline=False)
+        emb.add_field(name="Акаунт был создан:", value=ctx.message.author.created_at.strftime("%a, %#d %B %Y, %I:%M %p UTC"),inline=False)
+        emb.set_thumbnail(url=ctx.message.author.avatar_url)
+        await ctx.send(embed = emb)
+    else:
+        emb = discord.Embed(title="Информация о пользователе", color=member.color)
+        emb.add_field(name="Имя:", value=member.display_name,inline=False)
+        emb.add_field(name="Айди пользователя:", value=member.id,inline=False)
+        t = member.status
+        if t == discord.Status.online:
+            d = online + " В сети"
+
+        t = member.status
+        if t == discord.Status.offline:
+            d = offline + " Не в сети"
+
+        t = member.status
+        if t == discord.Status.idle:
+            d = sleep + " Не активен"
+
+        t = member.status
+        if t == discord.Status.dnd:
+            d = str(missing) + " Не беспокоить"
+        emb.add_field(name="Активность:", value=d,inline=False)
+        emb.add_field(name="Статус:", value=member.activity,inline=False)
+        emb.add_field(name="Роль на сервере:", value=f"{member.top_role.mention}",inline=False)
+        emb.add_field(name="Акаунт был создан:", value=member.created_at.strftime("%a, %#d %B %Y, %I:%M %p UTC"),inline=False)
+        await ctx.send(embed = emb)
 
 
 
