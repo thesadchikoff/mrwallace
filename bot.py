@@ -872,7 +872,7 @@ async def user( ctx, user: discord.Member = None ):
     if t == discord.Status.idle:
         d = str(sleep) + " Не активен"
 
-    t = ctx.message.author.status
+    t = author.status
     if t == discord.Status.dnd:
         d = str(missing) + " Не беспокоить"
     emb = discord.Embed(description = f'**Профиль участника { author.mention }**\n\n\n**__Описание участника:__**\n> { bio_view }\n\n**__Личная информация:__**\n**{rls} Основная роль:** {author.top_role.mention}\n**{levs} Уровень: { lvl }**\n**{erep} Репутация: { rep }**\n**{ops} Опыт: { exp } из { lvlch }**\n**{wark} Предупреждений: {war} из 3**\n\n**__Кошелек:__**\n**💶 Баланс: __{ int(balance) }__\n{emoji} Фишки: __{ chips }__**\n**{wlc} Wallace Coin: __{ wcoin }__**', color=0x9A3FD5)
