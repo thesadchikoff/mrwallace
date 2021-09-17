@@ -21,6 +21,7 @@ from pymongo import MongoClient, message
 import random
 import datetime
 import time
+import locale
 import math
 import asyncio
 from pyowm import OWM
@@ -77,7 +78,7 @@ client = commands.Bot( command_prefix = '!', intents = intents )
 
 
 
-cluster = MongoClient('mongodb+srv://strozza:89kola5618zona@cluster0.lhnhg.mongodb.net/Economy?retryWrites=true&w=majority')
+cluster = MongoClient('mongodb+srv://login:password@cluster0.lhnhg.mongodb.net/Economy?retryWrites=true&w=majority')
 users1 = cluster.Economy.users
 capture = cluster.Economy.capture
 warndb= cluster.Economy.warndb
@@ -96,13 +97,13 @@ unic = cluster.Economy.unic
 
 @client.event
 
-async def on_ready():
+async def on_ready(user = discord.Member):
     DiscordComponents(client)
     print( '\nБот успешно подключен!' )
     guild = client.get_guild( 709144637020831774 )
-    for row in users1.find():
-        if "wcoin" not in row:
-            users1.update_one({"id": row["id"]}, {"$set": {"wcoin": 0 }})
+    # for row in users1.find():
+    #     if "avatar" not in row:
+    #         users1.update_one({"id": row["id"]}, {"$set": {"avatar": user.avatar_url }})
     for member in guild.members:
         post = {
             "id": member.id,
@@ -114,11 +115,13 @@ async def on_ready():
             "warns": 0,
             "chips": 0,
             "wcoin": 0,
-            "bio": 'Описание не установлено.'
+            "bio": 'Описание не установлено.',
+            "avatar": member.avatar_url,
+            "name": member.name
         }
         if users1.count_documents( { 'id': member.id } ) == 0:
             users1.insert_one( post )          
-    await client.change_presence( status = discord.Status.online, activity = discord.Game( 'Bot By Wallace\n!help - помощь' ) )
+    await client.change_presence( status = discord.Status.online, activity = discord.Game( '!help - помощь' ) )
     await checker.start()
 
 
@@ -186,7 +189,7 @@ async def on_member_remove(member):
 async def on_member_join(member):
     channel = client.get_channel( 796917006691336263 )
     role = discord.utils.get( member.guild.roles, id = 772834055565606923 )
-    emb = discord.Embed( description = f"**Добро пожаловать, { member.mention }, ты попал в канал виртуальной семьи Wallace\nТебе автоматически была выдана роль <@&772834055565606923>, если требуется информация по ролям - перейди в канал <#863754922552983552>\nТакже не помешало бы ознакомиться с правилами сервера - <#709155076555669504>.\nПриятного тебе общения, не скучай!**", color = 0xe74c3c )
+    emb = discord.Embed( description = f"**Добро пожаловать, { member.mention }, ты попал в канал виртуального сообщества\nТебе автоматически была выдана роль <@&772834055565606923>, если требуется информация по ролям - перейди в канал <#863754922552983552>\nТакже не помешало бы ознакомиться с правилами сервера - <#709155076555669504>.\nПриятного тебе общения, не скучай!**", color = 0xe74c3c )
     emb.set_thumbnail( url = member.avatar_url )
     emb.set_footer( text = 'Welcome to Wallace Dynasty Discord server!', icon_url = 'https://cdn.discordapp.com/avatars/797171215285747772/a1f598f82f2ece5fc7f1a9f8ce247efa.webp?size=1024' )
     await member.add_roles( role )
@@ -247,6 +250,9 @@ async def cub(ctx, arg: int = None, amount: int = None):
 
 
 
+
+
+
 #give_role
 @client.command(pass_context = True)
 async def create_role(ctx):
@@ -259,23 +265,23 @@ async def create_role(ctx):
 @client.command()
 async def but(ctx):
     await ctx.send(
-    embed = discord.Embed(title = 'Invite to party', timestamp = ctx.message.created_at ),
+    embed = discord.Embed(title = 'Приглашение на вечеринку!', timestamp = ctx.message.created_at ),
     components = [
-        Button(style=ButtonStyle.green, label = "Accept", emoji = "☠️"),
-        Button(style=ButtonStyle.red, label = "Decline", emoji = "👹"),
-        Button(style=ButtonStyle.blue, label = "I'll think...", emoji = "👽")
+        Button(style=ButtonStyle.green, label = "Принять", emoji = "☠️"),
+        Button(style=ButtonStyle.red, label = "Отклонить", emoji = "👹"),
+        Button(style=ButtonStyle.blue, label = "Я подумаю...", emoji = "👽")
         ]
     )
     responce = await client.wait_for("button.click")
     if responce.channel == ctx.channel:
-        if responce.component.label == "Accept":
-            await responce.respond(content="Great!")
+        if responce.component.label == "Принять":
+            await responce.respond(content="Прекрасно!")
         else:
             await responce.respond(
-                embed = discord.Embed(title = "Are you sure?"),
+                embed = discord.Embed(title = "Ты уверен?"),
                 components = [
-                    Button(style=ButtonStyle.blue, label = "YES", emoji = "👍"),
-                    Button(style=ButtonStyle.red, label = "NO", emoji = "👎")
+                    Button(style=ButtonStyle.blue, label = "Да", emoji = "👍"),
+                    Button(style=ButtonStyle.red, label = "Нет", emoji = "👎")
                 ]
             )
 
@@ -293,8 +299,8 @@ async def bio(ctx, user: discord.Member = None):
     author = ctx.message.author
     default = "Описание не установлено, введите !bio [Текст] для установки описания."
     if user: author = user
-        # if 'bio' in users1.count_documents( { "id": author.id } ) == default:
-        #     await ctx.send( embed = discord.Embed( description = f'У пользователя { author.mention } не установлено описание.' ) )
+    if 'bio' in users1.count_documents( { "id": author.id } ) == default:
+        await ctx.send( embed = discord.Embed( description = f'У пользователя { author.mention } не установлено описание.' ) )
     bio_stat = users1.find_one( { 'id': author.id } )[ "bio" ]
     await ctx.send( embed = discord.Embed( description = f'Описание участника { author.mention }:\n>>> { bio_stat }' ) )
 
@@ -319,15 +325,7 @@ async def market(ctx, arg, *, arg2):
 
 #GIVE ROLE COMMAND'S
 
-@client.command()
-@commands.has_permissions(view_audit_log = True)
-async def miss(ctx, member: discord.Member):
-    await ctx.channel.purge(limit = 1);
-    role_1 = member.guild.get_role(800515204340645918)# ади роли которую будет получать юзер
-    emb = discord.Embed(description = f'Модератор { ctx.message.author.mention } выдал роль **Miss Wallace** пользователю { member.mention }', color = 0xff53BB)
-    emb.set_footer( text = f'Вызвано: { ctx.message.author }', icon_url = ctx.message.author.avatar_url )
-    await member.add_roles(role_1)
-    await ctx.send(embed = emb)
+
 
 @client.command()
 @commands.has_permissions(view_audit_log = True)
@@ -597,9 +595,9 @@ async def sellchips( ctx, amount: int = None ):
 @client.command()
 async def public(ctx):
     embed = discord.Embed(
-        title="Нажмите для перехода в группу семьи",
-        description="Ссылка для перехода на группу семьи в VK",
-        url='https://vk.com/arzwallace',
+        title="Нажмите для перехода в группу сообщества",
+        description="Ссылка для перехода на группу сообщества в VK",
+        url='#',
     )
     await ctx.send(embed=embed)
 
@@ -630,7 +628,7 @@ async def balance( ctx, user: discord.Member = None ):
 async def staff( ctx ):
         counter = 0
         sec = client.get_emoji(868111109712932926)
-        embed = discord.Embed(title='**Действующие руководители семьи:**', color = 0x9A3FD5)
+        embed = discord.Embed(title='**Действующие руководители сообщества:**', color = 0x9A3FD5)
         for row in unic.find().sort( 'id', pymongo.DESCENDING ):
             if counter == 10: break
             usr = ctx.guild.get_member( row['id'] )
@@ -751,14 +749,14 @@ async def dell_product( ctx, role_id ):
 		await ctx.send( embed = discord.Embed(description = f"{ author.mention }, Ошибка, введите команду по форме: /dell_product <id роли>", color = 0xF02F24), delete_after = 5 )
 
 
-# #edit event
-# @client.event
-# async def on_message_edit(ctx, before, after):
-#     channel = client.get_channel( 725338050946924564 )
-#     author = ctx.message.author
-#     if before.content == after.content:
-#         return
-#     await channel.send(embed = discord.Embed(description = f'Сообщение было изменено пользователем - { author.mention }'))
+#edit event
+@client.event
+async def on_message_edit(ctx, before, after):
+    channel = client.get_channel( 725338050946924564 )
+    author = ctx.message.author
+    if before.content == after.content:
+        return
+    await channel.send(embed = discord.Embed(description = f'Сообщение было изменено пользователем - { author.mention }'))
 
 
 @client.command()
@@ -900,8 +898,15 @@ async def leadersmoney( ctx ):
             if usr is not None:
                 if not usr.bot:
                     counter += 1
-                    embed.add_field(name=f'**№ { counter }.** { usr.display_name }', value = f'**Деньги: __{ round( row["balance"], 2 ) }__ :euro:**', inline = False)
-                    embed.set_footer(text = f'Вызвано: {ctx.message.author}', icon_url = ctx.message.author.avatar_url)
+                    if counter == 1:
+                        embed.add_field(name=f'**💙 № { counter }.** { usr.display_name }', value = f'**Деньги: __{ round( row["balance"], 2 ) }__ :euro:**', inline = False)
+                    if counter == 2:
+                        embed.add_field(name=f'**💛 № { counter }.** { usr.display_name }', value = f'**Деньги: __{ round( row["balance"], 2 ) }__ :euro:**', inline = False)
+                    if counter == 3:
+                        embed.add_field(name=f'**💜 № { counter }.** { usr.display_name }', value = f'**Деньги: __{ round( row["balance"], 2 ) }__ :euro:**', inline = False)
+                    if counter > 3:
+                        embed.add_field(name=f'**№ { counter }.** { usr.display_name }', value = f'**Деньги: __{ round( row["balance"], 2 ) }__ :euro:**', inline = False)
+                        embed.set_footer(text = f'Вызвано: {ctx.message.author}', icon_url = ctx.message.author.avatar_url)
         await ctx.send(embed = embed)
 
 
@@ -966,13 +971,7 @@ async def info_error(ctx,error):
         await ctx.send( embed = emb )
 
 
-#Peresvet Mudak
-@client.command()
-async def piss( ctx, member: discord.Member ):
-    emb = discord.Embed( color = 0xfd8268 )
-    emb.add_field( name = f'{ctx.message.author.display_name} обоссал { member.display_name }', value = f'обоссаный { member.display_name } убегает в кустики 😭'  )
-    emb.set_thumbnail( url= 'https://live.staticflickr.com/2530/3956896475_8833a3d92a.jpg' )
-    await ctx.send( embed = emb)
+
 
 
 
@@ -1229,7 +1228,7 @@ async def makestaff(ctx, member: discord.Member):
         }
     unic.insert_one(post)
     await member.add_roles( rolestaff )
-    await member.send(f'**{author.display_name} включил Вас в список руководства семьи.**')
+    await member.send(f'**{author.display_name} включил Вас в список руководства сообщества.**')
 
 
 
@@ -1347,12 +1346,7 @@ async def rep( ctx, user: discord.Member = None ):
         
 
 
-#.clear command
 
-@client.command()
-
-async def hello( ctx, amount = 1 ):
-	await ctx.channel.purge( limit = amount )
 
 	author = ctx.message.author
 	await ctx.send( f'**Здарова, __{ author.mention }__, пососи мне член**' )
@@ -1394,7 +1388,7 @@ async def cinfo(ctx):
         message += f'**⚔️ {row["reason"]}** vs **{row["reason1"]}**, сегодня в **{row["time"]}**\n'
         print(message)
     await ctx.send("<@&861944441527205918>")
-    emb = discord.Embed(title="Капты на сегодня:", description = message, color = 0xff0000)
+    emb = discord.Embed(title="Встречи на сегодня:", description = message, color = 0xff0000)
     await ctx.send(embed = emb)
 
 # @captureinfo.error
@@ -1425,13 +1419,7 @@ async def cinfo(ctx):
 
 
 
-@client.command()
 
-async def bye( ctx, amount = 1 ):
-	await ctx.channel.purge( limit = amount )
-
-	author = ctx.message.author
-	await ctx.send( f'**__{ author.mention }__, давай уебывай, перхоть ебаная.**' )
 
 
 
@@ -1497,7 +1485,7 @@ async def ban (ctx, member: discord.Member, *, reason = None):
     moderation.update_one( { "id": author.id }, { "$set": { "bans": bans } } )
     emb.set_author (name = member.name, icon_url = member.avatar_url)
     emb.add_field (name = 'Пользователь заблокирован', value = 'Блокировка пользователя : {}'.format(member.mention))
-    emb.set_footer (text = 'Был заблокирован администратором {}'.format (ctx.author.name), icon_url = ctx.author.avatar_url)
+    emb.set_footer (text = 'Был заблокирован модератором {}'.format (ctx.author.name), icon_url = ctx.author.avatar_url)
 
     await ctx.send (embed = emb)
 
@@ -1558,14 +1546,14 @@ async def help( ctx ):
     emb.add_field( name = '{}unmute'.format( PREFIX ), value = 'Снять мут участнику 🔇 [*Для модераторов*]\n' )
     emb.add_field( name = '{}user'.format( PREFIX ), value = 'Узнать информацию о себе/участнике 📄\n' )
     emb.add_field( name = '{}kick'.format( PREFIX ), value = 'Выгнать участника 🔒\n' )
-    emb.add_field( name = '{}staff'.format( PREFIX ), value = 'Список действующего руководства семьи 🔒\n' )
-    emb.add_field( name = '{}give'.format( PREFIX ), value = 'Передать деньги участнику 💶\n' )
+    emb.add_field( name = '{}staff'.format( PREFIX ), value = 'Список действующего руководства сообщества 🔒\n' )
+    emb.add_field( name = '!be{}give'.format( PREFIX ), value = 'Передать деньги участнику 💶\n' )
     emb.add_field( name = '{}ban'.format( PREFIX ), value = 'Заблокировать участника 🔒 [*Для руководителей*]\n' )
     emb.add_field( name = '{}bye'.format( PREFIX ), value = 'Попрощаться с ботом 🚩\n' )
     emb.add_field( name = '{}cub'.format( PREFIX ), value = 'Бросить кубик 🎲\n' )
     emb.add_field( name = '{}cinfo'.format( PREFIX ), value = 'Проверить забитые капты\n' )
-    emb.add_field( name = '{}captureinfo'.format( PREFIX ), value = 'Забить капт (Только для роли **Manager of Capture** и выше ) 🚩\n' )
-    emb.set_footer( icon_url = ctx.guild.owner.avatar_url, text = f'Mr. Wallace Bot by Strozza | { version }' )
+    emb.add_field( name = '{}captureinfo'.format( PREFIX ), value = 'Назначить встречу 🚩\n' )
+    emb.set_footer( icon_url = ctx.guild.owner.avatar_url, text = f'Mr. Wallace Bot | { version }' )
     await ctx.send(embed = emb)
 
 
@@ -1634,37 +1622,6 @@ async def stat(ctx,member:discord.Member = None, guild: discord.Guild = None):
 
 
 
-# Ping
-@client.command()
-
-async def ping(ctx):
-    ping = client.ws.latency # Получаем пинг клиента
-
-    ping_emoji = '🟩🔳🔳🔳🔳' # Эмоция пинга, если он меньше 100ms
-
-    if ping > 0.10000000000000000:
-        ping_emoji = '🟧🟩🔳🔳🔳' # Эмоция пинга, если он больше 100ms
-
-    if ping > 0.15000000000000000:
-        ping_emoji = '🟥🟧🟩🔳🔳' # Эмоция пинга, если он больше 150ms
-
-    if ping > 0.20000000000000000:
-        ping_emoji = '🟥🟥🟧🟩🔳' # Эмоция пинга, если он больше 200ms
-
-    if ping > 0.25000000000000000:
-        ping_emoji = '🟥🟥🟥🟧🟩' # Эмоция пинга, если он больше 250ms
-
-    if ping > 0.30000000000000000:
-        ping_emoji = '🟥🟥🟥🟥🟧' # Эмоция пинга, если он больше 300ms
-
-    if ping > 0.35000000000000000:
-        ping_emoji = '🟥🟥🟥🟥🟥' # Эмоция пинга, если он больше 350ms
-
-    message = await ctx.send('Пожалуйста, подождите. . .') # Переменная message с первоначальным сообщением
-    await message.edit(content = f'*Ping Бота!* {ping_emoji} `{ping * 1000:.0f}ms` ⏳') # Редактирование первого сообщения на итоговое (на сам пинг)
-    print(f'[Logs:utils] Пинг сервера был выведен | {prefix}ping') # Информация в консоль, что команда "ping" была использована
-    print(f'[Logs:utils] На данный момент пинг == {ping * 1000:.0f}ms | {prefix}ping') # Вывод пинга в консоль
-
 
 
 @client.command()
@@ -1701,7 +1658,7 @@ async def kick (ctx, member: discord.Member, *, reason):
     await member.kick(reason = reason)
     emb.set_author (name = member.name, icon_url = member.avatar_url)
     emb.add_field (name = 'Пользователь кикнут', value = 'Выгнан пользователь : {}'.format(member.mention))
-    emb.set_footer (text = 'Был выгнан с сервера лидером семьи {}'.format (ctx.author.name), icon_url = ctx.author.avatar_url)
+    emb.set_footer (text = 'Был выгнан с сервера модератором {}'.format (ctx.author.name), icon_url = ctx.author.avatar_url)
     await member.kick(reason = reason)
     await ctx.send (embed = emb)
     
@@ -1789,68 +1746,6 @@ async def unmute (ctx, member: discord.Member):
     await channel.send(embed = emb)
     
 
-    
-    #emb.set_author (name = member.name, icon_url = member.avatar_url)
-    #emb.add_field (name = 'Чат заблокирован', value = 'Блокировка чата пользователю : {}'.format(member.mention))
-    #emb.set_footer (text = 'Был помещён в мут модератором {}'.format (ctx.author.name), icon_url = ctx.author.avatar_url)
-    #await ctx.send (embed = emb)
-
-
-
-
-
-
-#crash
-
-# @commands.command()
-# async def crash(self, ctx, bet: int = None, coef: int = None):
-#     if bet is None:
-#         await ctx.send(f"{ctx.author.name}, Укажи сумму!")
-
-#     elif coef is None:
-#         await ctx.send(f"{ctx.author.name}, Укажи коэффициент!")
-
-#     elif coef <= 1:
-#         await ctx.send(f"{ctx.author.name}, Коэффициент должен быть выше 1x!")
-
-#     else:
-#         if cash < bet:
-#             await ctx.send(f"{ctx.author.name}, У тебя недостаточно денег!")
-
-#         else:
-#             # ограничение по беттингу (10/100000)
-#             if bet < 10:
-#                 await ctx.send("Минимальная ставка 10 монет!")
-#             elif bet > 100000:
-#                 await ctx.send("Максимальная ставка 100000 монет!")
-
-#             else:
-#                 #Для генерации результата в режиме Crash требуется 1 случайное число в интервале (0..1),
-#                 #которое затем переводится в коэффициент Crash, имеющий экспоненциальное распределение,
-#                 #по следующему алгоритму.
-#                 number = random.randint(0, 1)
-#                 crashOutcome = 1000000 / (math.floor(number * 1000000) + 1) * (1 - 0.05)
-
-#                 #Иногда может выпасть число по типу 0.99 или меньше, в самой игре такого нет,
-#                 #этот IF спасает от таких ситуации.
-#                 if crashOutcome <= 1:
-#                     crashOutcome = 1.00
-
-#                 #если коэф пользователя выше или равен крашу, то он выиграл
-#                 if crashOutcome >= coef:
-#                     winCash = bet * coef - bet
-#                     roundWinCash = round(winCash)
-#                     await ctx.send(content= ctx.author.mention, embed = discord.Embed(title="📈 Сломанный Краш", description=f"{ctx.author.name}, ты выиграл: **+{round(roundWinCash)} :euro:**\n\nКоэф: **{round(crashOutcome, 2)}**\nТы поставил на коэф: **{round(coef,2)}**\nТвоя ставка: **{bet}**"))
-
-#                     #Тут уже входит в силу ваша база данных.
-#                     #переменная roundWinCash, это выигрыш пользователя.
-
-#                 #или проиграл :(
-#                 else:
-#                     await ctx.send(content= ctx.author.mention, embed = discord.Embed(title="📈 Сломанный Краш", description=f"{ctx.author.name}, ты проиграл: **{bet} :euro:**\n\nКоэф: **{round(crashOutcome, 2)}**\nТы поставил на коэф: **{round(coef,2)}**\nТвоя ставка: **{bet}**"))
-
-#                     #Тут уже входит в силу ваша база данных.
-#                     #тут вы должны снять с баланса пользователя его ставку
 
 
 
